@@ -1,2 +1,7 @@
+from dataclasses import dataclass
+
+
+@dataclass
 class TuneEvaluationResult:
-    pass
+    rhythmicality: float = 0.0
+    harmony: float = 0.0
