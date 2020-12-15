@@ -4,6 +4,6 @@ from dataclasses import dataclass
 @dataclass
 class Note:
     note: int
-    start_time: float
-    end_time: float
-    velocity: float
+    start_time_seconds: float
+    end_time_seconds: float
+    velocity: int
