@@ -1,14 +1,20 @@
+import os
 import unittest
 
 from adversarial_music_generator.seed import Seed
 from adversarial_music_generator.tune_finder import TuneFinder
 from adversarial_music_generator.tune_generator import TuneGenerator
+from adversarial_music_generator.tune_to_midi_converter import TuneToMidiConverter
 
 
 class TuneGeneratorTestCase(unittest.TestCase):
     def test_something(self):
-        generator = TuneGenerator()
-        tune = generator.generateTune(Seed("123"))
+        tune_finder = TuneFinder()
+        tune = tune_finder.findTune(1000, 'whatever')
+
+        dir_path = os.path.dirname(os.path.realpath(__file__))
+        converter = TuneToMidiConverter()
+        converter.convert(tune, dir_path + "/output/out.mid")
 
 
 if __name__ == '__main__':

@@ -1,5 +1,6 @@
-from typing import List
+from typing import List, Generator, Iterator
 
+from adversarial_music_generator.models.note import Note
 from adversarial_music_generator.models.track import Track
 
 
@@ -8,3 +9,8 @@ class Tune:
         self.tracks: List[Track] = []
         self.bpm: float = 120.0
         self.grid_start: float = 0.0
+
+    def all_notes(self) -> Iterator[Note]:
+        for track in self.tracks:
+            for note in track.notes:
+                yield note
