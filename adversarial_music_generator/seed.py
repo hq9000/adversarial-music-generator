@@ -1,3 +1,4 @@
+from random import Random
 from typing import Dict, TypeVar
 
 T = TypeVar('T')

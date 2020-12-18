@@ -16,6 +16,8 @@ class MyTestCase(unittest.TestCase):
         dir_path = os.path.dirname(os.path.realpath(__file__))
         converter.convert(tune, dir_path + "/output/out.mid")
 
+        # timidity -ia /home/sergey/em/adversarial-music-generator/test/output/out.mid
+
     def _generateTestTune(self) -> Tune:
         res = Tune()
         res.bpm = 123
