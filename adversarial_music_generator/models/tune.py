@@ -14,3 +14,11 @@ class Tune:
         for track in self.tracks:
             for note in track.notes:
                 yield note
+
+    @property
+    def num_notes(self) -> int:
+        res = 0
+        for track in self.tracks:
+            res += len(track.notes)
+
+        return res

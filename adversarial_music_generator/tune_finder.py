@@ -20,7 +20,7 @@ class TuneFinder(TuneFinderInterface):
             seed = Seed(seed_str + str(i))
             tune = generator.generateTune(seed)
             evaluation = evaluator.evaluate(tune)
-            score = evaluation.harmony + evaluation.rhythmicality
+            score = evaluation.harmony + evaluation.rhythmicality + evaluation.content
             if max_score is None:
                 max_score = score
                 best_tune = tune

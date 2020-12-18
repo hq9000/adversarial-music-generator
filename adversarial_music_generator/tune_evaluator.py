@@ -10,6 +10,7 @@ class TuneEvaluator(TuneEvaluatorInterface):
 
         res.harmony = self._evaluate_harmony(tune)
         res.rhythmicality = self._evaluate_rhythmicality(tune)
+        res.content = self._evaluate_content(tune)
 
         return res
 
@@ -52,3 +53,8 @@ class TuneEvaluator(TuneEvaluatorInterface):
 
     def _calculate_overlapping_length(self, a: Note, b: Note) -> float:
         return max(0.0, min(a.end_time_seconds, b.end_time_seconds) - max(a.start_time_seconds, b.start_time_seconds))
+
+    def _evaluate_content(self, tune: Tune):
+        expected_mean_num_notes = 20
+        diff = tune.num_notes - expected_mean_num_notes
+        return 1.0 - abs(diff)
