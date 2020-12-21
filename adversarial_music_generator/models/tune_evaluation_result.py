@@ -3,6 +3,7 @@ from dataclasses import dataclass
 
 @dataclass
 class TuneEvaluationResult:
-    rhythmicality: float = 0.0
-    harmony: float = 0.0
-    content: float = 0.0
+    rhythmicality_score: float = 0.0
+    harmony_score: float = 0.0
+    content_score: float = 0.0
+    seed_str: str = ''

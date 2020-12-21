@@ -8,9 +8,9 @@ class TuneEvaluator(TuneEvaluatorInterface):
     def evaluate(self, tune: Tune) -> TuneEvaluationResult:
         res = TuneEvaluationResult()
 
-        res.harmony = self._evaluate_harmony(tune)
-        res.rhythmicality = self._evaluate_rhythmicality(tune)
-        res.content = self._evaluate_content(tune)
+        res.harmony_score = self._evaluate_harmony(tune)
+        res.rhythmicality_score = self._evaluate_rhythmicality(tune)
+        res.content_score = self._evaluate_content(tune)
 
         return res
 

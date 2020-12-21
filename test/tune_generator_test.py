@@ -11,7 +11,7 @@ class TuneGeneratorTestCase(unittest.TestCase):
     def test_something(self):
         tune_finder = TuneFinder()
         seed = 'whatever1'
-        num_iterations = 500
+        num_iterations = 10
 
         for seed in ['a', 'b', 'c']:
             tune = tune_finder.findTune(num_iterations, seed)
