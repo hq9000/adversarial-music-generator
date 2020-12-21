@@ -31,22 +31,24 @@ class TuneEvaluator(TuneEvaluatorInterface):
     def _calculate_amount_of_disharmony_of_two_notes(self, this_note: Note, that_note: Note) -> float:
 
         overlapping_length = self._calculate_overlapping_length(this_note, that_note)
+        if overlapping_length == 0.0:
+            return 0.0
 
         interval = abs(this_note.note - that_note.note) % 12
 
         disharmony_map = {
-            0: 0,
-            1: 10,
-            2: 6,
-            3: 2,
-            4: 3,
-            5: 1,
-            6: 4,
-            7: 7,
-            8: 4,
-            9: 2,
-            10: 8,
-            11: 10
+            0: 0,  # C
+            1: 10,  # C#
+            2: 3,  # D
+            3: 3,  # D#
+            4: 2,  # E
+            5: 1,  # F
+            6: 10,  # F#
+            7: 1,  # G
+            8: 3,  # G#
+            9: 6,  # A
+            10: 3,  # A#
+            11: 10  # B
         }
 
         return disharmony_map[interval] * overlapping_length

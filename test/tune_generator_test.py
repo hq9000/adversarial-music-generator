@@ -11,9 +11,9 @@ class TuneGeneratorTestCase(unittest.TestCase):
     def test_something(self):
         tune_finder = TuneFinder()
         seed = 'whatever1'
-        num_iterations = 10
+        num_iterations = 1000
 
-        for seed in ['a', 'b', 'c']:
+        for seed in ['a']:
             tune = tune_finder.findTune(num_iterations, seed)
             dir_path = os.path.dirname(os.path.realpath(__file__))
             converter = TuneToMidiConverter()
