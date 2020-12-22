@@ -56,10 +56,12 @@ class TuneFinder(TuneFinderInterface):
         generator = TuneGenerator()
         evaluator = TuneEvaluator()
 
-        async_tasks = self._create_async_tasks(num_iterations, seed_str, generator, evaluator, 100)
+        async_tasks = self._create_async_tasks(num_iterations, seed_str, generator, evaluator, 10)
 
         with Pool(self._get_pool_size()) as p:
-            results: List[RandomSearchResultsDict] = p.map(_perform_random_search, async_tasks)
+            promise = p.map_async(_perform_random_search, async_tasks)
+            promise.wait()
+            results = promise.get()
 
         results_dict = self._merge_async_results(results)
         self._normalize_scores(results_dict)
@@ -142,6 +144,8 @@ class TuneFinder(TuneFinderInterface):
         return tasks
 
     def _merge_async_results(self, results: List[RandomSearchResultsDict]) -> RandomSearchResultsDict:
+        todo
+
         pass
 
     def _get_pool_size(self) -> int:

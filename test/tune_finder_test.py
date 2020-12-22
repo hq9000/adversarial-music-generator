@@ -1,9 +1,7 @@
 import os
 import unittest
 
-from adversarial_music_generator.seed import Seed
 from adversarial_music_generator.tune_finder import TuneFinder
-from adversarial_music_generator.tune_generator import TuneGenerator
 from adversarial_music_generator.tune_to_midi_converter import TuneToMidiConverter
 
 
@@ -11,7 +9,7 @@ class TuneFinderTestCase(unittest.TestCase):
     def test_something(self):
         tune_finder = TuneFinder()
         seed = 'whatever1'
-        num_iterations = 1000
+        num_iterations = 100
 
         for seed in ['a']:
             tune = tune_finder.findTune(num_iterations, seed)
