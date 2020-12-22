@@ -7,7 +7,7 @@ from adversarial_music_generator.tune_generator import TuneGenerator
 from adversarial_music_generator.tune_to_midi_converter import TuneToMidiConverter
 
 
-class TuneGeneratorTestCase(unittest.TestCase):
+class TuneFinderTestCase(unittest.TestCase):
     def test_something(self):
         tune_finder = TuneFinder()
         seed = 'whatever1'
