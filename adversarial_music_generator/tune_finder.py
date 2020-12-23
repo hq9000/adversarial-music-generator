@@ -68,7 +68,13 @@ class TuneFinder(TuneFinderInterface):
         self._normalize_scores(results_dict)
         best_tune_evaluations = self._get_best_evaluations(results_dict, 1)
 
-        tunes = [generator.generateTune(Seed(x.seed_str)) for x in best_tune_evaluations]
+        best_tunes = [generator.generateTune(Seed(x.seed_str)) for x in best_tune_evaluations]
+
+        mutator = TuneMutator()
+
+
+
+
         return tunes[0]
 
     def _normalize_scores(self, results_dict: RandomSearchResultsDict):
