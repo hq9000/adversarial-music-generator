@@ -2,6 +2,7 @@ import os
 from dataclasses import dataclass
 from math import ceil
 from multiprocessing.pool import Pool
+from pprint import pprint
 from typing import Optional, Dict, List, Callable
 
 from adversarial_music_generator.interfaces import TuneFinderInterface
@@ -25,6 +26,8 @@ class AsyncRandomSearchTask:
 
 
 def _perform_random_search(task: AsyncRandomSearchTask) -> RandomSearchResultsDict:
+    # print(os.getpid(), "start")
+
     generator = task.generator
     evaluator = task.evaluator
 
@@ -33,7 +36,6 @@ def _perform_random_search(task: AsyncRandomSearchTask) -> RandomSearchResultsDi
     for i in range(task.start_idx, task.end_idx):
         if i % 10 == 0:
             print(os.getpid(), str(i), str(max_harmony))
-
         sequence_seed_str = task.base_seed_str + str(i)
         seed = Seed(sequence_seed_str)
         tune = generator.generateTune(seed)
@@ -47,6 +49,7 @@ def _perform_random_search(task: AsyncRandomSearchTask) -> RandomSearchResultsDi
         evaluation.seed_str = sequence_seed_str
         results_dict[sequence_seed_str] = evaluation
 
+    # print(os.getpid(), "end")
     return results_dict
 
 
@@ -56,12 +59,10 @@ class TuneFinder(TuneFinderInterface):
         generator = TuneGenerator()
         evaluator = TuneEvaluator()
 
-        async_tasks = self._create_async_tasks(num_iterations, seed_str, generator, evaluator, 10)
+        async_tasks = self._create_async_tasks(num_iterations, seed_str, generator, evaluator, 100)
 
         with Pool(self._get_pool_size()) as p:
-            promise = p.map_async(_perform_random_search, async_tasks)
-            promise.wait()
-            results = promise.get()
+            results = p.map(_perform_random_search, async_tasks)
 
         results_dict = self._merge_async_results(results)
         self._normalize_scores(results_dict)
@@ -132,8 +133,8 @@ class TuneFinder(TuneFinderInterface):
         tasks = []
         while cursor < num_iterations:
             task = AsyncRandomSearchTask(
-                start_idx=cursor * chunk_size,
-                end_idx=min((cursor + 1) * chunk_size, num_iterations),
+                start_idx=cursor,
+                end_idx=min(cursor + chunk_size, num_iterations),
                 generator=generator,
                 evaluator=evaluator,
                 base_seed_str=base_seed_str
@@ -144,9 +145,12 @@ class TuneFinder(TuneFinderInterface):
         return tasks
 
     def _merge_async_results(self, results: List[RandomSearchResultsDict]) -> RandomSearchResultsDict:
-        todo
+        merged_result = {}
 
-        pass
+        for result in results:
+            merged_result = {**merged_result, **result}
+
+        return merged_result
 
     def _get_pool_size(self) -> int:
         return 4
