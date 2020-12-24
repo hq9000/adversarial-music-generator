@@ -1,4 +1,5 @@
 import os
+from copy import deepcopy
 from dataclasses import dataclass
 from math import ceil
 from multiprocessing.pool import Pool
@@ -13,11 +14,14 @@ from adversarial_music_generator.tune_evaluator import TuneEvaluator
 from adversarial_music_generator.tune_generator import TuneGenerator
 import multiprocessing as mp
 
-RandomSearchResultsDict = Dict[str, TuneEvaluationResult]
+from adversarial_music_generator.tune_mutator import TuneMutator
+
+SearchResultsDict = Dict[str, TuneEvaluationResult]
+MutationSearchResultsDict = Dict[str, TuneEvaluationResult]
 
 
 @dataclass
-class AsyncRandomSearchTask:
+class GenerationSearchTask:
     base_seed_str: str
     start_idx: int
     end_idx: int
@@ -25,13 +29,24 @@ class AsyncRandomSearchTask:
     evaluator: TuneEvaluator
 
 
-def _perform_random_search(task: AsyncRandomSearchTask) -> RandomSearchResultsDict:
+@dataclass
+class MutationSearchTask:
+    generation_seed_strs: List[str]
+    base_mutation_seed_str: str
+    start_idx: int
+    end_idx: int
+    generator: TuneGenerator
+    evaluator: TuneEvaluator
+    mutator: TuneMutator
+
+
+def _handle_generation_search_task(task: GenerationSearchTask) -> SearchResultsDict:
     # print(os.getpid(), "start")
 
     generator = task.generator
     evaluator = task.evaluator
 
-    results_dict: RandomSearchResultsDict = {}
+    results_dict: SearchResultsDict = {}
     max_harmony = None
     for i in range(task.start_idx, task.end_idx):
         if i % 10 == 0:
@@ -46,10 +61,37 @@ def _perform_random_search(task: AsyncRandomSearchTask) -> RandomSearchResultsDi
 
         max_harmony = max(max_harmony, evaluation.harmony_score)
 
-        evaluation.seed_str = sequence_seed_str
+        evaluation.generator_seed_str = sequence_seed_str
         results_dict[sequence_seed_str] = evaluation
 
     # print(os.getpid(), "end")
+    return results_dict
+
+
+def _handle_mutation_search_task(task: MutationSearchTask) -> SearchResultsDict:
+    generator = task.generator
+    evaluator = task.evaluator
+    mutator = task.mutator
+
+    source_tunes_dict: Dict[str, Tune] = {}
+    for gen_seed in task.generation_seed_strs:
+        source_tunes_dict[gen_seed] = generator.generateTune(Seed(gen_seed))
+
+    results_dict: SearchResultsDict = {}
+    for i in range(task.start_idx, task.end_idx):
+        generator_seed_str = task.generation_seed_strs[i % len(task.generation_seed_strs)]
+        source_tune = source_tunes_dict[generator_seed_str]
+
+        tune_copy_for_mutation = deepcopy(source_tune)
+        mutation_seed_str = task.base_mutation_seed_str + str(i)
+        mutator.mutateTune(tune_copy_for_mutation, mutation_seed_str)
+
+        evaluation = evaluator.evaluate(tune_copy_for_mutation)
+        evaluation.generator_seed_str = generator_seed_str
+        evaluation.mutator_seed_str = mutation_seed_str
+
+        results_dict[mutation_seed_str] = evaluation
+
     return results_dict
 
 
@@ -58,26 +100,32 @@ class TuneFinder(TuneFinderInterface):
 
         generator = TuneGenerator()
         evaluator = TuneEvaluator()
+        mutator = TuneMutator()
 
-        async_tasks = self._create_async_tasks(num_iterations, seed_str, generator, evaluator, 100)
+        async_random_search_tasks = self._create_async_tasks(num_iterations, seed_str, generator, evaluator, 100)
 
         with Pool(self._get_pool_size()) as p:
-            results = p.map(_perform_random_search, async_tasks)
+            results = p.map(_handle_generation_search_task, async_random_search_tasks)
 
         results_dict = self._merge_async_results(results)
         self._normalize_scores(results_dict)
-        best_tune_evaluations = self._get_best_evaluations(results_dict, 1)
+        best_tune_evaluations = self._get_best_evaluations(results_dict)
+        best_tunes_generation_seeds: List[str] = [x.generator_seed_str for x in best_tune_evaluations]
 
-        best_tunes = [generator.generateTune(Seed(x.seed_str)) for x in best_tune_evaluations]
+        mutation_search_tasks = self._generate_mutation_search_tasks(num_iterations, best_tunes_generation_seeds)
 
-        mutator = TuneMutator()
+        with Pool(self._get_pool_size()) as p:
+            results = p.map(_handle_mutation_search_task, mutation_search_tasks)
+        results_dict = self._merge_async_results(results)
+        self._normalize_scores(results_dict)
+        best_tune_evaluation = self._get_best_evaluations(results_dict, 1)[0]
 
-
-
+        self._generate_tune_by_mutation_chain(best_tune_evaluation.generator_seed_str,
+                                              [best_tune_evaluation.mutator_seed_str])
 
         return tunes[0]
 
-    def _normalize_scores(self, results_dict: RandomSearchResultsDict):
+    def _normalize_scores(self, results_dict: SearchResultsDict):
         min_harmony: Optional[float] = None
         max_harmony: Optional[float] = None
 
@@ -122,7 +170,7 @@ class TuneFinder(TuneFinderInterface):
         else:
             return (raw_score - min_score) / (max_score - min_score)
 
-    def _get_best_evaluations(self, normalized_results_dict: RandomSearchResultsDict,
+    def _get_best_evaluations(self, normalized_results_dict: SearchResultsDict,
                               how_many: int) -> List[TuneEvaluationResult]:
         evaluations = list(normalized_results_dict.values())
 
@@ -133,12 +181,12 @@ class TuneFinder(TuneFinderInterface):
         return evaluations[0:how_many]
 
     def _create_async_tasks(self, num_iterations: int, base_seed_str: str, generator: TuneGenerator,
-                            evaluator: TuneEvaluator, chunk_size: int) -> List[AsyncRandomSearchTask]:
+                            evaluator: TuneEvaluator, chunk_size: int) -> List[GenerationSearchTask]:
 
         cursor = 0
         tasks = []
         while cursor < num_iterations:
-            task = AsyncRandomSearchTask(
+            task = GenerationSearchTask(
                 start_idx=cursor,
                 end_idx=min(cursor + chunk_size, num_iterations),
                 generator=generator,
@@ -150,7 +198,7 @@ class TuneFinder(TuneFinderInterface):
 
         return tasks
 
-    def _merge_async_results(self, results: List[RandomSearchResultsDict]) -> RandomSearchResultsDict:
+    def _merge_async_results(self, results: List[SearchResultsDict]) -> SearchResultsDict:
         merged_result = {}
 
         for result in results:
@@ -160,3 +208,11 @@ class TuneFinder(TuneFinderInterface):
 
     def _get_pool_size(self) -> int:
         return 4
+
+    def _generate_mutation_search_tasks(self, num_iterations, best_tunes_generation_seeds) -> List:
+
+        pass
+
+    def _generate_tune_by_mutation_chain(self, generator: TuneGenerator, Mutation: TuneMutator, generator_seed_str: str,
+                                         mutation_seed_str_chain: List[str]) -> Tune:
+        pass

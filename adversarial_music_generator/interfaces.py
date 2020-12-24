@@ -25,5 +25,5 @@ class TuneFinderInterface(ABC):
 
 class TuneMutatorInterface(ABC):
     @abstractmethod
-    def mutateTune(self, generator: TuneGeneratorInterface, num_iterations: int, tune_seed: str):
+    def mutateTune(self, tune: Tune, seed_str: str):
         pass
