@@ -18,6 +18,10 @@ SearchResultsDict = Dict[str, TuneEvaluationResult]
 MutationSearchResultsDict = Dict[str, TuneEvaluationResult]
 
 
+class TuneFinderError(Exception):
+    pass
+
+
 @dataclass
 class GenerationSearchTask:
     base_seed_str: str
@@ -38,32 +42,24 @@ class MutationSearchTask:
     mutator: TuneMutatorInterface
 
 
-def _handle_generation_search_task(task: GenerationSearchTask) -> SearchResultsDict:
-    # print(os.getpid(), "start")
-
+def _handle_generation_search_task(task: GenerationSearchTask) -> List[TuneEvaluationResult]:
     generator = task.generator
     evaluator = task.evaluator
 
-    results_dict: SearchResultsDict = {}
-    max_harmony = None
+    seeds: List[str] = []
     for i in range(task.start_idx, task.end_idx):
-        if i % 10 == 0:
-            print(os.getpid(), str(i), str(max_harmony))
-        sequence_seed_str = task.base_seed_str + str(i)
-        seed = Seed(sequence_seed_str)
-        tune = generator.generate_tunes(seed)
-        evaluation = evaluator.evaluate_tunes(tune)
+        seeds.append(task.base_seed_str + str(i))
 
-        if max_harmony is None:
-            max_harmony = evaluation.harmony_score
+    tunes = generator.generate_tunes(seeds)
+    evaluations = evaluator.evaluate_tunes(tunes)
 
-        max_harmony = max(max_harmony, evaluation.harmony_score)
+    if len(tunes) != len(evaluations) or len(seeds) != len(evaluations):
+        raise TuneFinderError('size mismatch (error: 93bf5bcc)')
 
-        evaluation.generator_seed_str = sequence_seed_str
-        results_dict[sequence_seed_str] = evaluation
+    for seed, evaluation in zip(seeds, evaluations):
+        evaluation.generator_seed = seed
 
-    # print(os.getpid(), "end")
-    return results_dict
+    return evaluations
 
 
 def _handle_mutation_search_task(task: MutationSearchTask) -> SearchResultsDict:
@@ -123,14 +119,13 @@ class TuneFinder(TuneFinderInterface):
         )
 
         with Pool(self._get_pool_size()) as p:
-            results = p.map(_handle_generation_search_task, random_search_tasks)
+            results: List[List[TuneEvaluationResult]] = p.map(_handle_generation_search_task, random_search_tasks)
 
-        results_dict = self._merge_async_results(results)
-        self._normalize_scores(results_dict)
+        merged_results = self._merge_async_results(results)
 
-        num_tunes_to_mutate: int = 4
+        self._normalize_scores(merged_results)
 
-        best_tune_evaluations = self._get_best_evaluations(results_dict, reducer, num_tunes_to_mutate)
+        best_tune_evaluations = self._get_best_evaluations(merged_results, reducer, num_tunes_to_mutate)
         best_tunes_generation_seeds: List[str] = [x.generator_seed_str for x in best_tune_evaluations]
 
         mutation_search_tasks = self._generate_mutation_search_tasks(
@@ -155,38 +150,18 @@ class TuneFinder(TuneFinderInterface):
             generator_seed_str=best_tune_evaluation.generator_seed_str,
             mutation_seed_str_chain=[best_tune_evaluation.mutator_seed_str])
 
-    def _normalize_scores(self, results_dict: SearchResultsDict):
-        min_harmony: Optional[float] = None
-        max_harmony: Optional[float] = None
+    def _normalize_scores(self, results: List[TuneEvaluationResult]):
 
-        min_rhythmicality: Optional[float] = None
-        max_rhythmicality: Optional[float] = None
-
-        min_content_score: Optional[float] = None
-        max_content_score: Optional[float] = None
-
-        for seed_str in results_dict:
-            evaluation = results_dict[seed_str]
-
-            min_rhythmicality = evaluation.rhythmicality_score if min_rhythmicality is None else min(
-                min_rhythmicality,
-                evaluation.rhythmicality_score)
-            max_rhythmicality = evaluation.rhythmicality_score if max_rhythmicality is None else max(
-                max_rhythmicality,
-                evaluation.rhythmicality_score)
-
-            min_harmony = evaluation.harmony_score if min_harmony is None else min(min_harmony,
-                                                                                   evaluation.harmony_score)
-            max_harmony = evaluation.harmony_score if max_harmony is None else max(max_harmony,
-                                                                                   evaluation.harmony_score)
-
-            min_content_score = evaluation.content_score if min_content_score is None else min(min_content_score,
+        min_scores: Dict[str, float] = {}
+        max_scores: Dict[str, float] = {}
                                                                                                evaluation.content_score)
-            max_content_score = evaluation.content_score if max_content_score is None else max(max_content_score,
-                                                                                               evaluation.content_score)
+        for aspect, value in results[0]:
+            todo
 
-        for seed_str in results_dict:
-            evaluation = results_dict[seed_str]
+
+        for evaluation in results:
+
+            evaluation = results[evaluation]
             evaluation.content_score = self._normalize_one_score(evaluation.content_score, min_content_score,
                                                                  max_content_score)
             evaluation.harmony_score = self._normalize_one_score(evaluation.harmony_score, min_harmony,
@@ -249,13 +224,8 @@ class TuneFinder(TuneFinderInterface):
 
         return tasks
 
-    def _merge_async_results(self, results: List[SearchResultsDict]) -> SearchResultsDict:
-        merged_result = {}
-
-        for result in results:
-            merged_result = {**merged_result, **result}
-
-        return merged_result
+    def _merge_async_results(self, results: List[List[TuneEvaluationResult]]) -> List[TuneEvaluationResult]:
+        return [val for sublist in results for val in sublist]
 
     def _get_pool_size(self) -> int:
         # make it dependent on the number of available CPU cores
