@@ -9,7 +9,7 @@ class TuneFinderTestCase(unittest.TestCase):
     def test_something(self):
         tune_finder = TuneFinder()
         seed = 'whatever1'
-        num_iterations = 10000
+        num_iterations = 60
 
         for seed in ['a']:
             tune = tune_finder.findTune(num_iterations, seed)
