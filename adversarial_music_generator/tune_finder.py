@@ -51,8 +51,8 @@ def _handle_generation_search_task(task: GenerationSearchTask) -> SearchResultsD
             print(os.getpid(), str(i), str(max_harmony))
         sequence_seed_str = task.base_seed_str + str(i)
         seed = Seed(sequence_seed_str)
-        tune = generator.generateTune(seed)
-        evaluation = evaluator.evaluate(tune)
+        tune = generator.generate_tunes(seed)
+        evaluation = evaluator.evaluate_tunes(tune)
 
         if max_harmony is None:
             max_harmony = evaluation.harmony_score
@@ -73,7 +73,7 @@ def _handle_mutation_search_task(task: MutationSearchTask) -> SearchResultsDict:
 
     source_tunes_dict: Dict[str, Tune] = {}
     for gen_seed in task.generation_seed_strs:
-        source_tunes_dict[gen_seed] = generator.generateTune(Seed(gen_seed))
+        source_tunes_dict[gen_seed] = generator.generate_tunes(Seed(gen_seed))
 
     results_dict: SearchResultsDict = {}
     for i in range(task.start_idx, task.end_idx):
@@ -93,7 +93,7 @@ def _handle_mutation_search_task(task: MutationSearchTask) -> SearchResultsDict:
 
         mutator.mutateTune(tune_copy_for_mutation, mutation_seed_str)
 
-        evaluation = evaluator.evaluate(tune_copy_for_mutation)
+        evaluation = evaluator.evaluate_tunes(tune_copy_for_mutation)
         evaluation.generator_seed_str = generator_seed_str
         evaluation.mutator_seed_str = mutation_seed_str
 
@@ -263,7 +263,7 @@ class TuneFinder(TuneFinderInterface):
 
     def _generate_tune_by_mutation_chain(self, generator: TuneGenerator, mutator: TuneMutator, generator_seed_str: str,
                                          mutation_seed_str_chain: List[str]) -> Tune:
-        tune = generator.generateTune(Seed(generator_seed_str))
+        tune = generator.generate_tunes(Seed(generator_seed_str))
 
         for seed_str in mutation_seed_str_chain:
             mutator.mutateTune(tune, seed_str)

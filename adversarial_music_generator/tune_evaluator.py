@@ -5,7 +5,7 @@ from adversarial_music_generator.models.tune_evaluation_result import TuneEvalua
 
 
 class TuneEvaluator(TuneEvaluatorInterface):
-    def evaluate(self, tune: Tune) -> TuneEvaluationResult:
+    def evaluate_tunes(self, tune: Tune) -> TuneEvaluationResult:
         res = TuneEvaluationResult()
 
         res.harmony_score = self._evaluate_harmony(tune)

@@ -12,15 +12,15 @@ class MyTestCase(unittest.TestCase):
         evaluator = TuneEvaluator()
 
         tune = self._createReferenceTune(0)
-        evaluation = evaluator.evaluate(tune)
+        evaluation = evaluator.evaluate_tunes(tune)
         self.assertEqual(1.0, evaluation.harmony_score)
 
         tune = self._createReferenceTune(1)
-        evaluation = evaluator.evaluate(tune)
+        evaluation = evaluator.evaluate_tunes(tune)
         self.assertEqual(1.0, evaluation.harmony_score)
 
         tune = self._createReferenceTune(2)
-        evaluation = evaluator.evaluate(tune)
+        evaluation = evaluator.evaluate_tunes(tune)
         self.assertEqual(-19.0, evaluation.harmony_score)
 
     def _createReferenceTune(self, num_notes: int) -> Tune:

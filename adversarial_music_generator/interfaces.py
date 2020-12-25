@@ -1,25 +1,25 @@
 from abc import ABC, abstractmethod
+from typing import List
 
 from adversarial_music_generator.models.tune import Tune
 from adversarial_music_generator.models.tune_evaluation_result import TuneEvaluationResult
-from adversarial_music_generator.seed import Seed
 
 
 class TuneGeneratorInterface(ABC):
     @abstractmethod
-    def generateTune(self, seed: Seed) -> Tune:
-        return Tune()
+    def generate_tunes(self, seeds: List[str]) -> List[Tune]:
+        pass
 
 
 class TuneEvaluatorInterface(ABC):
     @abstractmethod
-    def evaluate(self, tune: Tune) -> TuneEvaluationResult:
+    def evaluate_tunes(self, tunes: List[Tune]) -> List[TuneEvaluationResult]:
         pass
 
 
 class TuneMutatorInterface(ABC):
     @abstractmethod
-    def mutateTune(self, tune: Tune, seed_str: str):
+    def mutateTune(self, tune: Tune, seeds: List[str]) -> List[Tune]:
         pass
 
 

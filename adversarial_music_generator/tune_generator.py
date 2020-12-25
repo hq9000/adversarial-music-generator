@@ -10,7 +10,7 @@ from adversarial_music_generator.seed import Seed
 
 
 class TuneGenerator(TuneGeneratorInterface):
-    def generateTune(self, seed: Seed) -> Tune:
+    def generate_tunes(self, seed: Seed) -> Tune:
         res = Tune()
         res.tracks = [self._generate_one_track(seed, i) for i in range(0, 3)]
         return res

@@ -28,7 +28,7 @@ class TuneFinderTestCase(unittest.TestCase):
 
     def _create_generator(self) -> TuneGeneratorInterface:
         class MockTuneGenerator(TuneGeneratorInterface):
-            def generateTune(self, seed: Seed) -> Tune:
+            def generate_tunes(self, seed: Seed) -> Tune:
                 track = Track(TimbreRepository.lead)
                 track.notes = [Note(note=65, start_time_seconds=0.0, end_time_seconds=1.0, velocity=100)]
                 tune = Tune()
@@ -39,7 +39,7 @@ class TuneFinderTestCase(unittest.TestCase):
 
     def _create_evaluator(self) -> TuneEvaluatorInterface:
         class MockTuneEvaluator(TuneEvaluatorInterface):
-            def evaluate(self, tune: Tune) -> TuneEvaluationResult:
+            def evaluate_tunes(self, tune: Tune) -> TuneEvaluationResult:
                 pass
 
         return MockTuneEvaluator()

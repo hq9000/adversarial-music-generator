@@ -1,10 +1,21 @@
 from dataclasses import dataclass
+from typing import Dict
 
 
-@dataclass
+class TuneEvaluationError(Exception):
+    pass
+
+
 class TuneEvaluationResult:
-    rhythmicality_score: float = 0.0
-    harmony_score: float = 0.0
-    content_score: float = 0.0
-    generator_seed_str: str = ''
-    mutator_seed_str: str = ''
+
+    def __init__(self):
+        self._aspects: Dict[str, float] = {}
+        pass
+
+    def set_aspect_value(self, aspect: str, value: float):
+        self._aspects[aspect] = value
+
+    def get_aspect_value(self, aspect: str) -> float:
+        if aspect not in self._aspects:
+            raise TuneEvaluationError(f"aspect named {aspect} has not been set in this evaluation (error: 7d722882)")
+        return self._aspects[aspect]
