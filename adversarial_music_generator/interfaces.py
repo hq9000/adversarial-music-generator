@@ -17,13 +17,21 @@ class TuneEvaluatorInterface(ABC):
         pass
 
 
-class TuneFinderInterface(ABC):
-    @abstractmethod
-    def findTune(self, num_iterations: int, seed_str: str) -> Tune:
-        pass
-
-
 class TuneMutatorInterface(ABC):
     @abstractmethod
     def mutateTune(self, tune: Tune, seed_str: str):
+        pass
+
+
+class EvaluationReducerInterface(ABC):
+    @abstractmethod
+    def reduce(self, result: TuneEvaluationResult) -> float:
+        pass
+
+
+class TuneFinderInterface(ABC):
+    @abstractmethod
+    def findTune(self, num_iterations: int, base_seed_str: str, generator: TuneGeneratorInterface,
+                 evaluator: TuneEvaluatorInterface, mutator: TuneMutatorInterface,
+                 evaluation_reducer: EvaluationReducerInterface) -> Tune:
         pass
