@@ -12,6 +12,11 @@ class TuneGeneratorInterface(ABC):
 
 
 class TuneEvaluatorInterface(ABC):
+
+    @abstractmethod
+    def get_aspects(self) -> List[str]:
+        pass
+
     @abstractmethod
     def evaluate_tunes(self, tunes: List[Tune]) -> List[TuneEvaluationResult]:
         pass

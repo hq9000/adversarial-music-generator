@@ -103,11 +103,6 @@ class TuneFinder(TuneFinderInterface):
                  evaluator: TuneEvaluatorInterface, mutator: TuneMutatorInterface,
                  reducer: EvaluationReducerInterface) -> Tune:
 
-        # these 3 will be passed as external dependencies
-        generator = TuneGenerator()
-        evaluator = TuneEvaluator()
-        mutator = TuneMutator()
-
         chunk_size = 10
 
         random_search_tasks = self._generate_random_search_tasks(
@@ -123,10 +118,9 @@ class TuneFinder(TuneFinderInterface):
 
         merged_results = self._merge_async_results(results)
 
-        self._normalize_scores(merged_results)
-
-        best_tune_evaluations = self._get_best_evaluations(merged_results, reducer, num_tunes_to_mutate)
-        best_tunes_generation_seeds: List[str] = [x.generator_seed_str for x in best_tune_evaluations]
+        num_tunes_to_mutate = 4
+        best_tune_evaluations: List[TuneEvaluationResult] = self._get_best_evaluations(merged_results, reducer, num_tunes_to_mutate)
+        best_tunes_generation_seeds: List[str] = [x.generator_seed for x in best_tune_evaluations]
 
         mutation_search_tasks = self._generate_mutation_search_tasks(
             num_iterations=num_iterations,
@@ -150,34 +144,8 @@ class TuneFinder(TuneFinderInterface):
             generator_seed_str=best_tune_evaluation.generator_seed_str,
             mutation_seed_str_chain=[best_tune_evaluation.mutator_seed_str])
 
-    def _normalize_scores(self, results: List[TuneEvaluationResult]):
-
-        min_scores: Dict[str, float] = {}
-        max_scores: Dict[str, float] = {}
-                                                                                               evaluation.content_score)
-        for aspect, value in results[0]:
-            todo
-
-
-        for evaluation in results:
-
-            evaluation = results[evaluation]
-            evaluation.content_score = self._normalize_one_score(evaluation.content_score, min_content_score,
-                                                                 max_content_score)
-            evaluation.harmony_score = self._normalize_one_score(evaluation.harmony_score, min_harmony,
-                                                                 max_harmony)
-            evaluation.rhythmicality_score = self._normalize_one_score(evaluation.rhythmicality_score,
-                                                                       min_rhythmicality, max_rhythmicality)
-
-    def _normalize_one_score(self, raw_score: float, min_score: float, max_score: float) -> float:
-        if min_score == max_score:
-            return 0.0
-        else:
-            return (raw_score - min_score) / (max_score - min_score)
-
-    def _get_best_evaluations(self, normalized_results_dict: SearchResultsDict,
+    def _get_best_evaluations(self, evaluations: List[TuneEvaluationResult],
                               reducer: EvaluationReducerInterface, how_many: int) -> List[TuneEvaluationResult]:
-        evaluations = list(normalized_results_dict.values())
 
         def overall_score_calculator(x: TuneEvaluationResult) -> float:
             return reducer.reduce(x)

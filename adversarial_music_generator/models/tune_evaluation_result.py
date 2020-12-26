@@ -31,4 +31,4 @@ class TuneEvaluationResult:
         return self._aspects[aspect]
 
     def __iter__(self):
-        return self._aspects
+        return iter(self._aspects)
