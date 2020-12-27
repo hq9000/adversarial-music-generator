@@ -40,6 +40,7 @@ def _handle_generation_search_task(task: GenerationSearchTask) -> List[TuneEvalu
     generator = task.generator
     evaluator = task.evaluator
 
+    # todo use list comprehension here
     seeds: List[str] = []
     for i in range(task.start_idx, task.end_idx):
         seeds.append(task.base_seed_str + str(i))
