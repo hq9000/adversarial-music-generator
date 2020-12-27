@@ -2,7 +2,8 @@ import os
 import unittest
 from typing import List
 
-from adversarial_music_generator.interfaces import TuneGeneratorInterface, TuneEvaluatorInterface, TuneMutatorInterface
+from adversarial_music_generator.interfaces import TuneGeneratorInterface, TuneEvaluatorInterface, TuneMutatorInterface, \
+    EvaluationReducerInterface
 from adversarial_music_generator.models.note import Note
 from adversarial_music_generator.models.timbre_repository import TimbreRepository
 from adversarial_music_generator.models.track import Track
@@ -14,6 +15,8 @@ from adversarial_music_generator.tune_to_midi_converter import TuneToMidiConvert
 
 
 class TuneFinderTestCase(unittest.TestCase):
+    ASPECT_NUM_NOTES = "num_notes"
+
     def test_something(self):
         tune_finder = TuneFinder()
         seed = 'whatever1'
@@ -42,7 +45,7 @@ class TuneFinderTestCase(unittest.TestCase):
         class MockTuneEvaluator(TuneEvaluatorInterface):
             def get_aspects(self) -> List[str]:
                 return [
-                    'num_notes'
+                    TuneFinderTestCase.ASPECT_NUM_NOTES
                 ]
 
             def evaluate_tunes(self, tune: Tune) -> TuneEvaluationResult:
@@ -52,7 +55,7 @@ class TuneFinderTestCase(unittest.TestCase):
                 for note in tune.all_notes():
                     count += 1
 
-                res.set_aspect_value('num_notes', float(count))
+                res.set_aspect_value(TuneFinderTestCase.ASPECT_NUM_NOTES, float(count))
                 return res
 
         return MockTuneEvaluator()
@@ -61,11 +64,21 @@ class TuneFinderTestCase(unittest.TestCase):
         class MockTuneMutator(TuneMutatorInterface):
             def mutateTune(self, tune: Tune, seed: str):
                 seed_obj = Seed(seed)
-                num_additional_notes = seed_obj.randint(3,5, 'num additional notes')
-                tune
-
+                num_additional_notes = seed_obj.randint(3, 5, 'num additional notes')
+                track = tune.tracks[0]
+                for i in range(num_additional_notes):
+                    note = Note(note=65 + i, start_time_seconds=0.0, end_time_seconds=1.0, velocity=100)
+                    track.notes.append(note)
 
         return MockTuneMutator()
+
+    def _create_reducer(self) -> EvaluationReducerInterface:
+        class MockReducer(EvaluationReducerInterface):
+            def reduce(self, result: TuneEvaluationResult) -> float:
+                return result.get_aspect_value(TuneFinderTestCase.ASPECT_NUM_NOTES)
+
+        return MockReducer()
+
 
 if __name__ == '__main__':
     unittest.main()
