@@ -1,7 +1,8 @@
 import os
 import unittest
+from typing import List
 
-from adversarial_music_generator.interfaces import TuneGeneratorInterface, TuneEvaluatorInterface
+from adversarial_music_generator.interfaces import TuneGeneratorInterface, TuneEvaluatorInterface, TuneMutatorInterface
 from adversarial_music_generator.models.note import Note
 from adversarial_music_generator.models.timbre_repository import TimbreRepository
 from adversarial_music_generator.models.track import Track
@@ -39,11 +40,32 @@ class TuneFinderTestCase(unittest.TestCase):
 
     def _create_evaluator(self) -> TuneEvaluatorInterface:
         class MockTuneEvaluator(TuneEvaluatorInterface):
+            def get_aspects(self) -> List[str]:
+                return [
+                    'num_notes'
+                ]
+
             def evaluate_tunes(self, tune: Tune) -> TuneEvaluationResult:
-                pass
+                res = TuneEvaluationResult()
+
+                count = 0
+                for note in tune.all_notes():
+                    count += 1
+
+                res.set_aspect_value('num_notes', float(count))
+                return res
 
         return MockTuneEvaluator()
 
+    def _create_mutator(self) -> TuneMutatorInterface:
+        class MockTuneMutator(TuneMutatorInterface):
+            def mutateTune(self, tune: Tune, seed: str):
+                seed_obj = Seed(seed)
+                num_additional_notes = seed_obj.randint(3,5, 'num additional notes')
+                tune
+
+
+        return MockTuneMutator()
 
 if __name__ == '__main__':
     unittest.main()
