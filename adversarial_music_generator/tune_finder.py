@@ -1,18 +1,12 @@
-import os
 from copy import deepcopy
 from dataclasses import dataclass
 from multiprocessing.pool import Pool
-from typing import Optional, Dict, List
+from typing import Dict, List
 
 from adversarial_music_generator.interfaces import TuneFinderInterface, TuneGeneratorInterface, TuneMutatorInterface, \
     TuneEvaluatorInterface, EvaluationReducerInterface
 from adversarial_music_generator.models.tune import Tune
 from adversarial_music_generator.models.tune_evaluation_result import TuneEvaluationResult
-from adversarial_music_generator.seed import Seed
-from adversarial_music_generator.tune_evaluator import TuneEvaluator
-from adversarial_music_generator.tune_generator import TuneGenerator
-
-from adversarial_music_generator.tune_mutator import TuneMutator
 
 SearchResultsDict = Dict[str, TuneEvaluationResult]
 MutationSearchResultsDict = Dict[str, TuneEvaluationResult]
@@ -62,19 +56,21 @@ def _handle_generation_search_task(task: GenerationSearchTask) -> List[TuneEvalu
     return evaluations
 
 
-def _handle_mutation_search_task(task: MutationSearchTask) -> SearchResultsDict:
+def _handle_mutation_search_task(task: MutationSearchTask) -> List[TuneEvaluationResult]:
     generator = task.generator
     evaluator = task.evaluator
     mutator = task.mutator
 
     source_tunes_dict: Dict[str, Tune] = {}
-    for gen_seed in task.generation_seed_strs:
-        source_tunes_dict[gen_seed] = generator.generate_tunes(Seed(gen_seed))
+    source_tunes = generator.generate_tunes(task.generation_seed_strs)
 
-    results_dict: SearchResultsDict = {}
+    for gen_seed, tune in zip(task.generation_seed_strs, source_tunes):
+        source_tunes_dict[gen_seed] = tune
+
+    mutated_tunes: List[Tune] = []
     for i in range(task.start_idx, task.end_idx):
-        generator_seed_str = task.generation_seed_strs[i % len(task.generation_seed_strs)]
-        source_tune = source_tunes_dict[generator_seed_str]
+        source_tune_seed = task.generation_seed_strs[i % len(task.generation_seed_strs)]
+        source_tune = source_tunes_dict[source_tune_seed]
 
         tune_copy_for_mutation = deepcopy(source_tune)
 
@@ -83,19 +79,15 @@ def _handle_mutation_search_task(task: MutationSearchTask) -> SearchResultsDict:
             # go unmutated to leave the original
             # tunes in the evaluated set (in case no mutations bring any
             # improvement)
-            mutation_seed_str = TuneMutator.SPECIAL_SEED_STR_TO_LEAVE_TUNE_UNMUTATED
+            mutation_seed_str = TuneMutatorInterface.SPECIAL_SEED_STR_TO_LEAVE_TUNE_UNMUTATED
         else:
             mutation_seed_str = task.base_mutation_seed_str + str(i)
 
         mutator.mutateTune(tune_copy_for_mutation, mutation_seed_str)
 
-        evaluation = evaluator.evaluate_tunes(tune_copy_for_mutation)
-        evaluation.generator_seed_str = generator_seed_str
-        evaluation.mutator_seed_str = mutation_seed_str
+        mutated_tunes.append(tune_copy_for_mutation)
 
-        results_dict[mutation_seed_str] = evaluation
-
-    return results_dict
+    return evaluator.evaluate_tunes(mutated_tunes)
 
 
 class TuneFinder(TuneFinderInterface):
@@ -119,7 +111,8 @@ class TuneFinder(TuneFinderInterface):
         merged_results = self._merge_async_results(results)
 
         num_tunes_to_mutate = 4
-        best_tune_evaluations: List[TuneEvaluationResult] = self._get_best_evaluations(merged_results, reducer, num_tunes_to_mutate)
+        best_tune_evaluations: List[TuneEvaluationResult] = self._get_best_evaluations(merged_results, reducer,
+                                                                                       num_tunes_to_mutate)
         best_tunes_generation_seeds: List[str] = [x.generator_seed for x in best_tune_evaluations]
 
         mutation_search_tasks = self._generate_mutation_search_tasks(
@@ -134,15 +127,15 @@ class TuneFinder(TuneFinderInterface):
 
         with Pool(self._get_pool_size()) as p:
             results = p.map(_handle_mutation_search_task, mutation_search_tasks)
-        results_dict = self._merge_async_results(results)
-        self._normalize_scores(results_dict)
-        best_tune_evaluation = self._get_best_evaluations(results_dict, reducer, 1)[0]
+
+        mutation_results = self._merge_async_results(results)
+        best_tune_evaluations = self._get_best_evaluations(mutation_results, reducer, 1)
 
         return self._generate_tune_by_mutation_chain(
             generator=generator,
             mutator=mutator,
-            generator_seed_str=best_tune_evaluation.generator_seed_str,
-            mutation_seed_str_chain=[best_tune_evaluation.mutator_seed_str])
+            generator_seed_str=best_tune_evaluations[0].generator_seed,
+            mutation_seed_str_chain=best_tune_evaluations[0].mutator_seeds)
 
     def _get_best_evaluations(self, evaluations: List[TuneEvaluationResult],
                               reducer: EvaluationReducerInterface, how_many: int) -> List[TuneEvaluationResult]:
@@ -199,9 +192,12 @@ class TuneFinder(TuneFinderInterface):
         # make it dependent on the number of available CPU cores
         return 4
 
-    def _generate_tune_by_mutation_chain(self, generator: TuneGenerator, mutator: TuneMutator, generator_seed_str: str,
+    def _generate_tune_by_mutation_chain(self, generator: TuneGeneratorInterface, mutator: TuneMutatorInterface,
+                                         generator_seed_str: str,
                                          mutation_seed_str_chain: List[str]) -> Tune:
-        tune = generator.generate_tunes(Seed(generator_seed_str))
+        tunes = generator.generate_tunes([generator_seed_str])
+
+        tune = tunes[0]
 
         for seed_str in mutation_seed_str_chain:
             mutator.mutateTune(tune, seed_str)

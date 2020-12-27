@@ -23,8 +23,10 @@ class TuneEvaluatorInterface(ABC):
 
 
 class TuneMutatorInterface(ABC):
+    SPECIAL_SEED_STR_TO_LEAVE_TUNE_UNMUTATED = 'transparent'
+
     @abstractmethod
-    def mutateTune(self, tune: Tune, seeds: List[str]) -> List[Tune]:
+    def mutateTune(self, tune: Tune, seed: str):
         pass
 
 
