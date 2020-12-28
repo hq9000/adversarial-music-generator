@@ -6,5 +6,5 @@ from adversarial_music_generator.seed import Seed
 class TuneMutator(TuneMutatorInterface):
 
 
-    def mutateTune(self, tune: Tune, seed_str: str):
+    def mutate_tune(self, tune: Tune, seed_str: str):
         pass

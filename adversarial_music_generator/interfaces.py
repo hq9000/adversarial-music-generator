@@ -26,7 +26,7 @@ class TuneMutatorInterface(ABC):
     SPECIAL_SEED_STR_TO_LEAVE_TUNE_UNMUTATED = 'transparent'
 
     @abstractmethod
-    def mutateTune(self, tune: Tune, seed: str):
+    def mutate_tune(self, tune: Tune, seed: str):
         pass
 
 

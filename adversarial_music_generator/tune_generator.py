@@ -10,17 +10,21 @@ from adversarial_music_generator.seed import Seed
 
 
 class TuneGenerator(TuneGeneratorInterface):
-    def generate_tunes(self, seed: Seed) -> Tune:
+    def generate_tunes(self, seeds: List[str]) -> List[Tune]:
+        return [self._generate_one_tune(seed) for seed in seeds]
+
+    def _generate_one_tune(self, seed: str) -> Tune:
         res = Tune()
-        res.tracks = [self._generate_one_track(seed, i) for i in range(0, 3)]
+        seed_obj = Seed(seed)
+        res.tracks = [self._generate_one_track(seed_obj, i) for i in range(0, 3)]
         return res
 
-    def _generate_one_track(self, seed: Seed, track_number: int) -> Track:
+    def _generate_one_track(self, seed_obj: Seed, track_number: int) -> Track:
         notes: List[Note] = []
-        for i in range(0, seed.randint(1, 100, f'number of notes for track {track_number}')):
-            start_time = seed.randfloat(0, 10.0, f'note start for track {track_number} and note {i}')
-            length = seed.randfloat(0.1, 1.0, f'note length for track {track_number} and note {i}')
-            pitch = seed.randint(40, 90, f"pitch for track {track_number} and note {i}")
+        for i in range(0, seed_obj.randint(1, 100, f'number of notes for track {track_number}')):
+            start_time = seed_obj.randfloat(0, 10.0, f'note start for track {track_number} and note {i}')
+            length = seed_obj.randfloat(0.1, 1.0, f'note length for track {track_number} and note {i}')
+            pitch = seed_obj.randint(40, 90, f"pitch for track {track_number} and note {i}")
             note = Note(start_time_seconds=start_time, end_time_seconds=start_time + length, note=pitch, velocity=100)
             notes.append(note)
 

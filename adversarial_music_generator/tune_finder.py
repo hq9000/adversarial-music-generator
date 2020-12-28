@@ -40,10 +40,7 @@ def _handle_generation_search_task(task: GenerationSearchTask) -> List[TuneEvalu
     generator = task.generator
     evaluator = task.evaluator
 
-    # todo use list comprehension here
-    seeds: List[str] = []
-    for i in range(task.start_idx, task.end_idx):
-        seeds.append(task.base_seed_str + str(i))
+    seeds = [task.base_seed_str + str(i) for i in range(task.start_idx, task.end_idx)]
 
     tunes = generator.generate_tunes(seeds)
     evaluations = evaluator.evaluate_tunes(tunes)
@@ -62,32 +59,23 @@ def _handle_mutation_search_task(task: MutationSearchTask) -> List[TuneEvaluatio
     evaluator = task.evaluator
     mutator = task.mutator
 
-    source_tunes_dict: Dict[str, Tune] = {}
     source_tunes = generator.generate_tunes(task.generation_seed_strs)
-
-    for gen_seed, tune in zip(task.generation_seed_strs, source_tunes):
-        source_tunes_dict[gen_seed] = tune
+    source_tunes_dict = {gen_seed: tune for (gen_seed, tune) in zip(task.generation_seed_strs, source_tunes)}
 
     mutated_tunes: List[Tune] = []
     for i in range(task.start_idx, task.end_idx):
         source_tune_seed = task.generation_seed_strs[i % len(task.generation_seed_strs)]
         source_tune = source_tunes_dict[source_tune_seed]
-
         tune_copy_for_mutation = deepcopy(source_tune)
 
-        if i < len(task.generation_seed_strs):
+        if i >= len(task.generation_seed_strs):
             # first N tunes (one for every original seed)
             # go unmutated to leave the original
             # tunes in the evaluated set (in case no mutations bring any
             # improvement)
-            mutation_seed_str = TuneMutatorInterface.SPECIAL_SEED_STR_TO_LEAVE_TUNE_UNMUTATED
-        else:
-            mutation_seed_str = task.base_mutation_seed_str + str(i)
-
-        mutator.mutateTune(tune_copy_for_mutation, mutation_seed_str)
-
+            mutation_seed = task.base_mutation_seed_str + str(i)
+            mutator.mutate_tune(tune_copy_for_mutation, mutation_seed)
         mutated_tunes.append(tune_copy_for_mutation)
-
     return evaluator.evaluate_tunes(mutated_tunes)
 
 
@@ -201,6 +189,6 @@ class TuneFinder(TuneFinderInterface):
         tune = tunes[0]
 
         for seed_str in mutation_seed_str_chain:
-            mutator.mutateTune(tune, seed_str)
+            mutator.mutate_tune(tune, seed_str)
 
         return tune

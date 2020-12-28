@@ -15,7 +15,10 @@ from adversarial_music_generator.tune_to_midi_converter import TuneToMidiConvert
 
 
 class MockTuneGenerator(TuneGeneratorInterface):
-    def generate_tunes(self, seed: Seed) -> Tune:
+    def generate_tunes(self, seeds: List[str]) -> List[Tune]:
+        return [self._generate_one_tune(s) for s in seeds]
+
+    def _generate_one_tune(self, seed: str) -> Tune:
         track = Track(TimbreRepository.lead)
         track.notes = [Note(note=65, start_time_seconds=0.0, end_time_seconds=1.0, velocity=100)]
         tune = Tune()
@@ -29,7 +32,10 @@ class MockTuneEvaluator(TuneEvaluatorInterface):
             TuneFinderTestCase.ASPECT_NUM_NOTES
         ]
 
-    def evaluate_tunes(self, tune: Tune) -> TuneEvaluationResult:
+    def evaluate_tunes(self, tunes: List[Tune]) -> List[TuneEvaluationResult]:
+        return [self._evaluate_one_tune(t) for t in tunes]
+
+    def _evaluate_one_tune(self, tune: Tune) -> TuneEvaluationResult:
         res = TuneEvaluationResult()
 
         count = 0
@@ -41,7 +47,7 @@ class MockTuneEvaluator(TuneEvaluatorInterface):
 
 
 class MockTuneMutator(TuneMutatorInterface):
-    def mutateTune(self, tune: Tune, seed: str):
+    def mutate_tune(self, tune: Tune, seed: str):
         seed_obj = Seed(seed)
         num_additional_notes = seed_obj.randint(3, 5, 'num additional notes')
         track = tune.tracks[0]
@@ -68,7 +74,7 @@ class TuneFinderTestCase(unittest.TestCase):
         mutator = self._create_mutator()
 
         tune = tune_finder.findTune(
-            num_iterations=100,
+            num_iterations=num_iterations,
             base_seed_str='a',
             generator=generator,
             evaluator=evaluator,
