@@ -1,8 +1,9 @@
 from copy import deepcopy
 from dataclasses import dataclass
 from multiprocessing.pool import Pool
-from typing import Dict, List
+from typing import Dict, List, Iterable
 
+from adversarial_music_generator.find_tunes_task import FindTunesTask
 from adversarial_music_generator.interfaces import TuneFinderInterface, TuneGeneratorInterface, TuneMutatorInterface, \
     TuneEvaluatorInterface, EvaluationReducerInterface
 from adversarial_music_generator.models.tune import Tune
@@ -80,54 +81,61 @@ def _handle_mutation_search_task(task: MutationSearchTask) -> List[TuneEvaluatio
 
 
 class TuneFinder(TuneFinderInterface):
-    def findTune(self, num_iterations: int, base_seed_str: str, generator: TuneGeneratorInterface,
-                 evaluator: TuneEvaluatorInterface, mutator: TuneMutatorInterface,
-                 reducer: EvaluationReducerInterface) -> Tune:
+    def findTune(self, find_task: FindTunesTask) -> Iterable[Tune]:
 
-        chunk_size = 10
+        chunk_size = 10  # normally, it should depend on the number of CPU cores
 
         random_search_tasks = self._generate_random_search_tasks(
-            num_iterations=num_iterations,
-            base_seed_str=base_seed_str,
-            generator=generator,
-            evaluator=evaluator,
+            num_iterations=find_task.num_generation_iterations,
+            base_seed_str=find_task.base_seed,
+            generator=find_task.generator,
+            evaluator=find_task.evaluator,
             chunk_size=chunk_size
         )
 
+        # performing generation using a pool of workers
         with Pool(self._get_pool_size()) as p:
             results: List[List[TuneEvaluationResult]] = p.map(_handle_generation_search_task, random_search_tasks)
 
         merged_results = self._merge_async_results(results)
 
-        num_tunes_to_mutate = 4
-        best_tune_evaluations: List[TuneEvaluationResult] = self._get_best_evaluations(merged_results, reducer,
+        num_tunes_to_mutate = find_task.num_tunes_to_mutate
+        best_tune_evaluations: List[TuneEvaluationResult] = self._get_best_evaluations(merged_results,
+                                                                                       find_task.reducer,
                                                                                        num_tunes_to_mutate)
         best_tunes_generation_seeds: List[str] = [x.generator_seed for x in best_tune_evaluations]
 
         mutation_search_tasks = self._generate_mutation_search_tasks(
-            num_iterations=num_iterations,
+            num_iterations=find_task.num_mutation_iterations,
             best_tunes_generation_seeds=best_tunes_generation_seeds,
-            evaluator=evaluator,
-            mutator=mutator,
-            generator=generator,
+            evaluator=find_task.evaluator,
+            mutator=find_task.mutator,
+            generator=find_task.generator,
             chunk_size=chunk_size,
-            base_mutation_seed_str=base_seed_str
+            base_mutation_seed_str=find_task.base_seed
         )
 
         with Pool(self._get_pool_size()) as p:
             results = p.map(_handle_mutation_search_task, mutation_search_tasks)
 
         mutation_results = self._merge_async_results(results)
-        best_tune_evaluations = self._get_best_evaluations(mutation_results, reducer, 1)
+        best_tune_evaluations = self._get_best_evaluations(mutation_results, find_task.reducer,
+                                                           find_task.num_tunes_to_find)
 
-        return self._generate_tune_by_mutation_chain(
-            generator=generator,
-            mutator=mutator,
-            generator_seed_str=best_tune_evaluations[0].generator_seed,
-            mutation_seed_str_chain=best_tune_evaluations[0].mutator_seeds)
+        res: List[Tune] = []
+        for i in range(find_task.num_tunes_to_find):
+            res.append(self._generate_tune_by_mutation_chain(
+                generator=find_task.generator,
+                mutator=find_task.mutator,
+                generator_seed_str=best_tune_evaluations[i].generator_seed,
+                mutation_seed_str_chain=best_tune_evaluations[i].mutator_seeds)
+            )
+
+        return res
 
     def _get_best_evaluations(self, evaluations: List[TuneEvaluationResult],
-                              reducer: EvaluationReducerInterface, how_many: int) -> List[TuneEvaluationResult]:
+                              reducer: EvaluationReducerInterface,
+                              how_many: int) -> List[TuneEvaluationResult]:
 
         def overall_score_calculator(x: TuneEvaluationResult) -> float:
             return reducer.reduce(x)
