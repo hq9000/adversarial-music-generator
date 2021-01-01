@@ -1,4 +1,5 @@
 from dataclasses import dataclass
+from typing import Optional
 
 from adversarial_music_generator.interfaces import TuneGeneratorInterface, TuneEvaluatorInterface, \
     EvaluationReducerInterface, TuneMutatorInterface

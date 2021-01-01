@@ -3,6 +3,7 @@ import unittest
 from typing import List
 import re
 
+from adversarial_music_generator.find_tunes_task import FindTunesTask
 from adversarial_music_generator.interfaces import TuneGeneratorInterface, TuneEvaluatorInterface, TuneMutatorInterface, \
     EvaluationReducerInterface
 from adversarial_music_generator.models.note import Note
@@ -23,7 +24,8 @@ class MockTuneGenerator(TuneGeneratorInterface):
         # seed is expected to end up with a number,
         # this number we use to generate that many notes
 
-        num_notes = int(re.sub(r"\D", "", seed))
+        only_digits = re.sub(r"\D", "", seed)
+        num_notes = int(only_digits)
 
         track = Track(TimbreRepository.lead)
         notes = []
@@ -59,7 +61,11 @@ class MockTuneEvaluator(TuneEvaluatorInterface):
 
 class MockTuneMutator(TuneMutatorInterface):
     def mutate_tune(self, tune: Tune, seed: str):
-        num_additional_notes = int(re.sub(r"\D", "", seed))
+        if seed == TuneMutatorInterface.SPECIAL_SEED_STR_TO_LEAVE_TUNE_UNMUTATED:
+            return
+
+        only_digits = re.sub(r"\D", "", seed)
+        num_additional_notes = int(only_digits)
         track = tune.tracks[0]
         for i in range(num_additional_notes):
             note = Note(note=65 + i, start_time_seconds=0.0, end_time_seconds=1.0, velocity=100)
@@ -98,14 +104,19 @@ class TuneFinderTestCase(unittest.TestCase):
         reducer = self._create_reducer()
         mutator = self._create_mutator()
 
-        tune = tune_finder.findTune(
-            num_iterations=num_iterations,
-            base_seed_str='a',
+        task = FindTunesTask(
+            num_generation_iterations=100,
+            num_mutation_iterations=100,
             generator=generator,
-            evaluator=evaluator,
+            mutator=mutator,
             reducer=reducer,
-            mutator=mutator
+            evaluator=evaluator,
+            num_tunes_to_find=1,
+            num_tunes_to_mutate=4,
+            base_seed="a"
         )
+
+        tunes = tune_finder.findTune(task)
 
 
         dir_path = os.path.dirname(os.path.realpath(__file__))

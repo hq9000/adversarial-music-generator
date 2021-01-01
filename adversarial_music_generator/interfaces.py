@@ -1,7 +1,6 @@
 from abc import ABC, abstractmethod
 from typing import List, Iterable
 
-from adversarial_music_generator.find_tunes_task import FindTunesTask
 from adversarial_music_generator.models.tune import Tune
 from adversarial_music_generator.models.tune_evaluation_result import TuneEvaluationResult
 
@@ -34,10 +33,4 @@ class TuneMutatorInterface(ABC):
 class EvaluationReducerInterface(ABC):
     @abstractmethod
     def reduce(self, result: TuneEvaluationResult) -> float:
-        pass
-
-
-class TuneFinderInterface(ABC):
-    @abstractmethod
-    def findTune(self, find_tunes_task: FindTunesTask) -> Iterable[Tune]:
         pass

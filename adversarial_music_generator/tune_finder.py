@@ -1,13 +1,14 @@
 from copy import deepcopy
 from dataclasses import dataclass
 from multiprocessing.pool import Pool
-from typing import Dict, List, Iterable
+from typing import Dict, List, Iterable, cast
 
 from adversarial_music_generator.find_tunes_task import FindTunesTask
-from adversarial_music_generator.interfaces import TuneFinderInterface, TuneGeneratorInterface, TuneMutatorInterface, \
+from adversarial_music_generator.interfaces import TuneGeneratorInterface, TuneMutatorInterface, \
     TuneEvaluatorInterface, EvaluationReducerInterface
 from adversarial_music_generator.models.tune import Tune
 from adversarial_music_generator.models.tune_evaluation_result import TuneEvaluationResult
+from adversarial_music_generator.tune_finder_interface import TuneFinderInterface
 
 SearchResultsDict = Dict[str, TuneEvaluationResult]
 MutationSearchResultsDict = Dict[str, TuneEvaluationResult]
@@ -64,6 +65,9 @@ def _handle_mutation_search_task(task: MutationSearchTask) -> List[TuneEvaluatio
     source_tunes_dict = {gen_seed: tune for (gen_seed, tune) in zip(task.generation_seed_strs, source_tunes)}
 
     mutated_tunes: List[Tune] = []
+    mutation_seeds: List[str] = []
+    generation_seeds: List[str] = []
+
     for i in range(task.start_idx, task.end_idx):
         source_tune_seed = task.generation_seed_strs[i % len(task.generation_seed_strs)]
         source_tune = source_tunes_dict[source_tune_seed]
@@ -75,9 +79,22 @@ def _handle_mutation_search_task(task: MutationSearchTask) -> List[TuneEvaluatio
             # tunes in the evaluated set (in case no mutations bring any
             # improvement)
             mutation_seed = task.base_mutation_seed_str + str(i)
-            mutator.mutate_tune(tune_copy_for_mutation, mutation_seed)
+        else:
+            mutation_seed = TuneMutatorInterface.SPECIAL_SEED_STR_TO_LEAVE_TUNE_UNMUTATED
+
+        mutation_seeds.append(mutation_seed)
+        generation_seeds.append(source_tune_seed)
+        mutator.mutate_tune(tune_copy_for_mutation, mutation_seed)
         mutated_tunes.append(tune_copy_for_mutation)
-    return evaluator.evaluate_tunes(mutated_tunes)
+
+    evaluations = evaluator.evaluate_tunes(mutated_tunes)
+
+    for (evaluation, generation_seed, mutation_seed) in zip(evaluations, generation_seeds, mutation_seeds):
+        evaluation = cast(TuneEvaluationResult, evaluation)
+        evaluation.generator_seed = generation_seed
+        evaluation.mutator_seeds = [mutation_seed]
+
+    return evaluations
 
 
 class TuneFinder(TuneFinderInterface):
