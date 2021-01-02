@@ -4,7 +4,7 @@ from adversarial_music_generator.models.note import Note
 from adversarial_music_generator.models.timbre_repository import TimbreRepository
 from adversarial_music_generator.models.track import Track
 from adversarial_music_generator.models.tune import Tune
-from adversarial_music_generator.tune_evaluator import TuneEvaluator
+from demo.naive_random.tune_evaluator import TuneEvaluator
 
 
 class MyTestCase(unittest.TestCase):

@@ -11,9 +11,7 @@ from adversarial_music_generator.models.timbre_repository import TimbreRepositor
 from adversarial_music_generator.models.track import Track
 from adversarial_music_generator.models.tune import Tune
 from adversarial_music_generator.models.tune_evaluation_result import TuneEvaluationResult
-from adversarial_music_generator.seed import Seed
 from adversarial_music_generator.tune_finder import TuneFinder
-from adversarial_music_generator.tune_to_midi_converter import TuneToMidiConverter
 
 
 class MockTuneGenerator(TuneGeneratorInterface):
@@ -120,10 +118,6 @@ class TuneFinderTestCase(unittest.TestCase):
 
         self.assertEqual(1, len(tunes))
         self.assertEqual(195, len(tunes[0].tracks[0].notes))
-
-        # dir_path = os.path.dirname(os.path.realpath(__file__))
-        # converter = TuneToMidiConverter()
-        # converter.convert(tune, dir_path + "/output/out_" + seed + "_" + str(num_iterations) + ".mid")
 
     def _create_generator(self) -> TuneGeneratorInterface:
         return MockTuneGenerator()
