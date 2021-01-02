@@ -118,10 +118,12 @@ class TuneFinderTestCase(unittest.TestCase):
 
         tunes = tune_finder.findTune(task)
 
+        self.assertEqual(1, len(tunes))
+        self.assertEqual(195, len(tunes[0].tracks[0].notes))
 
-        dir_path = os.path.dirname(os.path.realpath(__file__))
-        converter = TuneToMidiConverter()
-        converter.convert(tune, dir_path + "/output/out_" + seed + "_" + str(num_iterations) + ".mid")
+        # dir_path = os.path.dirname(os.path.realpath(__file__))
+        # converter = TuneToMidiConverter()
+        # converter.convert(tune, dir_path + "/output/out_" + seed + "_" + str(num_iterations) + ".mid")
 
     def _create_generator(self) -> TuneGeneratorInterface:
         return MockTuneGenerator()

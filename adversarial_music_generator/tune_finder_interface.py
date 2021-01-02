@@ -1,5 +1,5 @@
 from abc import abstractmethod, ABC
-from typing import Iterable
+from typing import List
 
 from adversarial_music_generator.find_tunes_task import FindTunesTask
 from adversarial_music_generator.models.tune import Tune
@@ -7,5 +7,5 @@ from adversarial_music_generator.models.tune import Tune
 
 class TuneFinderInterface(ABC):
     @abstractmethod
-    def findTune(self, find_tunes_task: FindTunesTask) -> Iterable[Tune]:
+    def findTune(self, find_tunes_task: FindTunesTask) -> List[Tune]:
         pass

@@ -98,7 +98,7 @@ def _handle_mutation_search_task(task: MutationSearchTask) -> List[TuneEvaluatio
 
 
 class TuneFinder(TuneFinderInterface):
-    def findTune(self, find_task: FindTunesTask) -> Iterable[Tune]:
+    def findTune(self, find_task: FindTunesTask) -> List[Tune]:
 
         chunk_size = 10  # normally, it should depend on the number of CPU cores
 
