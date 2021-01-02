@@ -7,3 +7,4 @@ class Note:
     start_time_seconds: float
     end_time_seconds: float
     velocity: int
+    removed: bool = False

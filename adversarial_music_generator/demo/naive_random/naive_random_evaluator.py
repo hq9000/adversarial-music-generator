@@ -1,10 +1,10 @@
-from typing import List, Optional, Dict
+from typing import List, Dict
 
 from adversarial_music_generator.interfaces import TuneEvaluatorInterface
 from adversarial_music_generator.models.note import Note
 from adversarial_music_generator.models.tune import Tune
 from adversarial_music_generator.models.tune_evaluation_result import TuneEvaluationResult
-from demo.naive_random.naive_random_generator import NaiveRandomGenerator
+from adversarial_music_generator.demo.naive_random import NaiveRandomGenerator
 
 
 class NaiveRandomEvaluator(TuneEvaluatorInterface):
@@ -16,7 +16,7 @@ class NaiveRandomEvaluator(TuneEvaluatorInterface):
         self._calibrated: bool = False
         self._min_calibration_values: Dict[str, float] = {}
         self._max_calibration_values: Dict[str, float] = {}
-        self._has_to_calibrate: bool = True
+        self._has_to_normalize: bool = True
 
     def get_aspects(self) -> List[str]:
         return [
@@ -27,7 +27,7 @@ class NaiveRandomEvaluator(TuneEvaluatorInterface):
 
     def evaluate_tunes(self, tunes: List[Tune]) -> List[TuneEvaluationResult]:
 
-        if self._has_to_calibrate:
+        if self._has_to_normalize:
             if not self._calibrated:
                 self._calibrate()
 
@@ -40,7 +40,7 @@ class NaiveRandomEvaluator(TuneEvaluatorInterface):
         res.set_aspect_value(self.ASPECT_RHYTHMICALITY, self._evaluate_rhythmicality(tune))
         res.set_aspect_value(self.ASPECT_CONTENT, self._evaluate_content(tune))
 
-        if self._has_to_calibrate:
+        if self._has_to_normalize:
             for aspect in self.get_aspects():
                 raw_value = res.get_aspect_value(aspect)
                 min_value = self._min_calibration_values[aspect]
@@ -109,11 +109,12 @@ class NaiveRandomEvaluator(TuneEvaluatorInterface):
         seeds = ['calibrate' + str(i) for i in range(100)]
         tunes = generator.generate_tunes(seeds)
 
-        self._has_to_calibrate = False
+        # temporarily disabling normalizing to avoid a loop
+        self._has_to_normalize = False
 
-        non_normalized_evaluations = self.evaluate_tunes(tunes)
+        not_normalized_evaluations = self.evaluate_tunes(tunes)
 
-        for evaluation in non_normalized_evaluations:
+        for evaluation in not_normalized_evaluations:
             for aspect in self.get_aspects():
 
                 value = evaluation.get_aspect_value(aspect)
@@ -127,4 +128,4 @@ class NaiveRandomEvaluator(TuneEvaluatorInterface):
                 self._min_calibration_values[aspect] = min(value, self._min_calibration_values[aspect])
                 self._max_calibration_values[aspect] = max(value, self._max_calibration_values[aspect])
 
-        self._has_to_calibrate = True
+        self._has_to_normalize = True

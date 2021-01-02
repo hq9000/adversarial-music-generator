@@ -114,7 +114,7 @@ class TuneFinderTestCase(unittest.TestCase):
             base_seed="a"
         )
 
-        tunes = tune_finder.findTune(task)
+        tunes = tune_finder.find_tunes(task)
 
         self.assertEqual(1, len(tunes))
         self.assertEqual(195, len(tunes[0].tracks[0].notes))
