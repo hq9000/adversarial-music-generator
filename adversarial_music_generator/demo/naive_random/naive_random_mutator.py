@@ -18,10 +18,10 @@ class NaiveRandomMutator(TuneMutatorInterface):
         for track in tune.tracks:
             total_num_notes += len(track.notes)
 
-        removed_notes_ids = set([seed.randint(0, num_notes_to_remove, 'removed note' + str(i)) for i in
+        removed_notes_ids = set([seed.randint(0, total_num_notes, 'removed note' + str(i)) for i in
                                  range(num_notes_to_remove)])
 
-        changed_notes_ids = set([seed.randint(0, num_notes_to_remove, 'changed note' + str(i)) for i in
+        changed_notes_ids = set([seed.randint(0, total_num_notes, 'changed note' + str(i)) for i in
                                  range(num_notes_to_change)])
 
         for i, note in enumerate(tune.all_notes()):

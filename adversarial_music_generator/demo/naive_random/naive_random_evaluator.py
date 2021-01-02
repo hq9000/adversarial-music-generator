@@ -4,7 +4,7 @@ from adversarial_music_generator.interfaces import TuneEvaluatorInterface
 from adversarial_music_generator.models.note import Note
 from adversarial_music_generator.models.tune import Tune
 from adversarial_music_generator.models.tune_evaluation_result import TuneEvaluationResult
-from adversarial_music_generator.demo.naive_random import NaiveRandomGenerator
+from adversarial_music_generator.demo.naive_random.naive_random_generator import NaiveRandomGenerator
 
 
 class NaiveRandomEvaluator(TuneEvaluatorInterface):

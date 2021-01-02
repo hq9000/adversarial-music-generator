@@ -1,3 +1,4 @@
+import logging
 from copy import deepcopy
 from dataclasses import dataclass
 from multiprocessing.pool import Pool
@@ -39,6 +40,8 @@ class MutationSearchTask:
 
 
 def _handle_generation_search_task(task: GenerationSearchTask) -> List[TuneEvaluationResult]:
+    logging.info(f"generation {task.start_idx} - {task.end_idx}")
+
     generator = task.generator
     evaluator = task.evaluator
 
@@ -100,7 +103,7 @@ def _handle_mutation_search_task(task: MutationSearchTask) -> List[TuneEvaluatio
 class TuneFinder(TuneFinderInterface):
     def find_tunes(self, find_task: FindTunesTask) -> List[Tune]:
 
-        chunk_size = 10  # normally, it should depend on the number of CPU cores
+        chunk_size = 50
 
         random_search_tasks = self._generate_random_search_tasks(
             num_iterations=find_task.num_generation_iterations,
@@ -129,7 +132,7 @@ class TuneFinder(TuneFinderInterface):
             mutator=find_task.mutator,
             generator=find_task.generator,
             chunk_size=chunk_size,
-            base_mutation_seed_str=find_task.base_seed
+            base_mutation_seed_str=find_task.base_seed + "_mutation"
         )
 
         with Pool(self._get_pool_size()) as p:

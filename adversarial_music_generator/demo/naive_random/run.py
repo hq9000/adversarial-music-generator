@@ -20,11 +20,11 @@ task = FindTunesTask(
     evaluator=evaluator,
     reducer=reducer,
     mutator=mutator,
-    num_generation_iterations=1000,
-    num_mutation_iterations=1000,
-    num_tunes_to_mutate=2,
+    num_generation_iterations=20000,
+    num_mutation_iterations=20000,
+    num_tunes_to_mutate=4,
     base_seed="whatever",
-    num_tunes_to_find=2
+    num_tunes_to_find=3
 )
 
 tunes = finder.find_tunes(task)
@@ -32,4 +32,4 @@ tunes = finder.find_tunes(task)
 for i, tune in enumerate(tunes):
     to_midi_converter = TuneToMidiConverter()
     dir_path = os.path.dirname(os.path.realpath(__file__))
-    to_midi_converter.convert(tune, dir_path + '/output' + str(i) + ".mid")
+    to_midi_converter.convert(tune, dir_path + '/output/' + str(i) + ".mid")
