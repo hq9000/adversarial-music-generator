@@ -16,3 +16,4 @@ class FindTunesTask:
     num_mutation_iterations: int
     num_tunes_to_find: int
     base_seed: str
+    parallelize: bool = True

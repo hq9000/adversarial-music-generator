@@ -113,9 +113,12 @@ class TuneFinder(TuneFinderInterface):
             chunk_size=chunk_size
         )
 
-        # performing generation using a pool of workers
-        with Pool(self._get_pool_size()) as p:
-            results: List[List[TuneEvaluationResult]] = p.map(_handle_generation_search_task, random_search_tasks)
+        if find_task.parallelize:
+            # performing generation using a pool of workers
+            with Pool(self._get_pool_size()) as p:
+                results: List[List[TuneEvaluationResult]] = p.map(_handle_generation_search_task, random_search_tasks)
+        else:
+            results = [_handle_generation_search_task(task) for task in random_search_tasks]
 
         merged_results = self._merge_async_results(results)
 
@@ -135,8 +138,11 @@ class TuneFinder(TuneFinderInterface):
             base_mutation_seed_str=find_task.base_seed + "_mutation"
         )
 
-        with Pool(self._get_pool_size()) as p:
-            results = p.map(_handle_mutation_search_task, mutation_search_tasks)
+        if find_task.parallelize:
+            with Pool(self._get_pool_size()) as p:
+                results = p.map(_handle_mutation_search_task, mutation_search_tasks)
+        else:
+            results = [_handle_mutation_search_task(task) for task in mutation_search_tasks]
 
         mutation_results = self._merge_async_results(results)
         best_tune_evaluations = self._get_best_evaluations(mutation_results, find_task.reducer,

@@ -1,4 +1,3 @@
-import os
 import unittest
 from typing import List
 import re
@@ -9,9 +8,9 @@ from adversarial_music_generator.interfaces import TuneGeneratorInterface, TuneE
 from adversarial_music_generator.models.note import Note
 from adversarial_music_generator.models.timbre_repository import TimbreRepository
 from adversarial_music_generator.models.track import Track
-from adversarial_music_generator.models.tune import Tune
 from adversarial_music_generator.models.tune_evaluation_result import TuneEvaluationResult
-from adversarial_music_generator.tune_finder import TuneFinder
+from adversarial_music_generator.tune_finder import Tune, TuneFinder
+from parameterized import parameterized
 
 
 class MockTuneGenerator(TuneGeneratorInterface):
@@ -93,10 +92,14 @@ class TuneFinderTestCase(unittest.TestCase):
 
     ASPECT_NUM_NOTES = "num_notes"
 
-    def test_something(self):
+    @parameterized.expand(
+        [
+            (True, ),
+            (False, )
+        ]
+    )
+    def test_find(self, parallelize: bool):
         tune_finder = TuneFinder()
-        seed = 'whatever1'
-        num_iterations = 60
 
         generator, evaluator = self._create_generator(), self._create_evaluator()
         reducer = self._create_reducer()
@@ -111,7 +114,8 @@ class TuneFinderTestCase(unittest.TestCase):
             evaluator=evaluator,
             num_tunes_to_find=1,
             num_tunes_to_mutate=4,
-            base_seed="a"
+            base_seed="a",
+            parallelize=parallelize
         )
 
         tunes = tune_finder.find_tunes(task)
