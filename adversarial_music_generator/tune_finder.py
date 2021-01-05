@@ -103,7 +103,7 @@ def _handle_mutation_search_task(task: MutationSearchTask) -> List[TuneEvaluatio
 class TuneFinder(TuneFinderInterface):
     def find_tunes(self, find_task: FindTunesTask) -> List[Tune]:
 
-        chunk_size = 50
+        chunk_size = 150
 
         random_search_tasks = self._generate_random_search_tasks(
             num_iterations=find_task.num_generation_iterations,
