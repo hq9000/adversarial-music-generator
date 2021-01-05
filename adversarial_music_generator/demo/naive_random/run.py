@@ -20,11 +20,12 @@ task = FindTunesTask(
     evaluator=evaluator,
     reducer=reducer,
     mutator=mutator,
-    num_generation_iterations=20000,
-    num_mutation_iterations=20000,
+    num_generation_iterations=200,
+    num_mutation_iterations=200,
     num_tunes_to_mutate=4,
     base_seed="whatever",
-    num_tunes_to_find=3
+    num_tunes_to_find=3,
+    parallelize=False
 )
 
 tunes = finder.find_tunes(task)

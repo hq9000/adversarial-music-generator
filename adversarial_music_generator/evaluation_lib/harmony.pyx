@@ -10,9 +10,10 @@ def calculate_disharmony(starts_py: Array[float], ends_py: Array[float], pitches
     cdef int[:] pitches = pitches_py
 
     for i in range(num_notes):
-        for j in range(num_notes):
-            if j != i:
-                res -= _calculate_amount_of_disharmony_of_two_notes(i, j, starts, ends, pitches)
+        for j in range(i+1, num_notes):
+            res += _calculate_amount_of_disharmony_of_two_notes(i, j, starts, ends, pitches)
+
+    return res
 
 cdef inline float _get_disharmony_map_value(int interval):
     if interval == 0:
