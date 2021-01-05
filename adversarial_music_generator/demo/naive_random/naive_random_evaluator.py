@@ -129,3 +129,4 @@ class NaiveRandomEvaluator(TuneEvaluatorInterface):
                 self._max_calibration_values[aspect] = max(value, self._max_calibration_values[aspect])
 
         self._has_to_normalize = True
+        self._calibrated = True
