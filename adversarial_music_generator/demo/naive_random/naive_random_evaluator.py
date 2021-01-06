@@ -1,10 +1,15 @@
+from array import array
 from typing import List, Dict
 
+from pyximport import pyximport
 from adversarial_music_generator.interfaces import TuneEvaluatorInterface
 from adversarial_music_generator.models.note import Note
 from adversarial_music_generator.models.tune import Tune
 from adversarial_music_generator.models.tune_evaluation_result import TuneEvaluationResult
 from adversarial_music_generator.demo.naive_random.naive_random_generator import NaiveRandomGenerator
+
+pyximport.install()
+from adversarial_music_generator.evaluation_lib.harmony import calculate_disharmony
 
 
 class NaiveRandomEvaluator(TuneEvaluatorInterface):
@@ -36,7 +41,8 @@ class NaiveRandomEvaluator(TuneEvaluatorInterface):
     def _evaluate_one_tune(self, tune: Tune) -> TuneEvaluationResult:
         res = TuneEvaluationResult()
 
-        res.set_aspect_value(self.ASPECT_HARMONY, self._evaluate_harmony(tune))
+        # res.set_aspect_value(self.ASPECT_HARMONY, self._evaluate_harmony(tune))
+        res.set_aspect_value(self.ASPECT_HARMONY, self._evaluate_harmony_optimized(tune))
         res.set_aspect_value(self.ASPECT_RHYTHMICALITY, self._evaluate_rhythmicality(tune))
         res.set_aspect_value(self.ASPECT_CONTENT, self._evaluate_content(tune))
 
@@ -64,6 +70,20 @@ class NaiveRandomEvaluator(TuneEvaluatorInterface):
                     res -= self._calculate_amount_of_disharmony_of_two_notes(this_note, that_note)
 
         return res
+
+    def _evaluate_harmony_optimized(self, tune: Tune) -> float:
+        num_notes = tune.num_notes
+
+        starts = array('f', [0.0] * num_notes)
+        ends = array('f', [0.0] * num_notes)
+        pitches = array('i', [0] * num_notes)
+
+        for i, note in enumerate(tune.all_notes()):
+            starts[i] = note.start_time_seconds
+            ends[i] = note.end_time_seconds
+            pitches[i] = note.note
+
+        return 1.0 - calculate_disharmony(starts, ends, pitches)
 
     def _evaluate_rhythmicality(self, tune: Tune) -> float:
         res = 1.0
@@ -129,3 +149,4 @@ class NaiveRandomEvaluator(TuneEvaluatorInterface):
                 self._max_calibration_values[aspect] = max(value, self._max_calibration_values[aspect])
 
         self._has_to_normalize = True
+        self._calibrated = True
