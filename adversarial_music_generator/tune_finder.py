@@ -2,7 +2,7 @@ import logging
 from copy import deepcopy
 from dataclasses import dataclass
 from multiprocessing.pool import Pool
-from typing import Dict, List, Iterable, cast
+from typing import Dict, List, Iterable, cast, Callable
 
 from adversarial_music_generator.find_tunes_task import FindTunesTask
 from adversarial_music_generator.interfaces import TuneGeneratorInterface, TuneMutatorInterface, \
@@ -13,6 +13,7 @@ from adversarial_music_generator.tune_finder_interface import TuneFinderInterfac
 
 SearchResultsDict = Dict[str, TuneEvaluationResult]
 MutationSearchResultsDict = Dict[str, TuneEvaluationResult]
+ProgressReportingFunction = Callable[[str, int, int], None]
 
 
 class TuneFinderError(Exception):
@@ -113,17 +114,18 @@ class TuneFinder(TuneFinderInterface):
             chunk_size=chunk_size
         )
 
-        if find_task.parallelize:
-            # performing generation using a pool of workers
-            with Pool(self._get_pool_size()) as p:
-                results: List[List[TuneEvaluationResult]] = p.map(_handle_generation_search_task, random_search_tasks)
-        else:
-            results = [_handle_generation_search_task(task) for task in random_search_tasks]
+        def progress_reporting_function(phase: str, iterations_done: int, total_iterations: int):
+            print(phase, iterations_done, "of", total_iterations)
 
-        merged_results = self._merge_async_results(results)
+        random_search_results = self._run_tasks(
+            find_task=find_task,
+            processing_function=_handle_generation_search_task,
+            tasks=random_search_tasks,
+            progress_reporting_function=progress_reporting_function,
+            phase_name='random search')
 
         num_tunes_to_mutate = find_task.num_tunes_to_mutate
-        best_tune_evaluations: List[TuneEvaluationResult] = self._get_best_evaluations(merged_results,
+        best_tune_evaluations: List[TuneEvaluationResult] = self._get_best_evaluations(random_search_results,
                                                                                        find_task.reducer,
                                                                                        num_tunes_to_mutate)
         best_tunes_generation_seeds: List[str] = [x.generator_seed for x in best_tune_evaluations]
@@ -138,13 +140,14 @@ class TuneFinder(TuneFinderInterface):
             base_mutation_seed_str=find_task.base_seed + "_mutation"
         )
 
-        if find_task.parallelize:
-            with Pool(self._get_pool_size()) as p:
-                results = p.map(_handle_mutation_search_task, mutation_search_tasks)
-        else:
-            results = [_handle_mutation_search_task(task) for task in mutation_search_tasks]
+        mutation_results = self._run_tasks(
+            find_task=find_task,
+            processing_function=_handle_mutation_search_task,
+            tasks=mutation_search_tasks,
+            progress_reporting_function=progress_reporting_function,
+            phase_name="mutation"
+        )
 
-        mutation_results = self._merge_async_results(results)
         best_tune_evaluations = self._get_best_evaluations(mutation_results, find_task.reducer,
                                                            find_task.num_tunes_to_find)
 
@@ -158,6 +161,29 @@ class TuneFinder(TuneFinderInterface):
             )
 
         return res
+
+    def _run_tasks(self, find_task: FindTunesTask, processing_function: callable, tasks: List,
+                   progress_reporting_function: ProgressReportingFunction, phase_name: str) -> List:
+
+        results: List = []
+
+        def register_result(result):
+            results.append(result)
+            progress_reporting_function(phase_name, len(results), len(tasks))
+
+        if find_task.parallelize:
+            with Pool(self._get_pool_size()) as p:
+                for task in tasks:
+                    p.apply_async(processing_function, (task,), callback=register_result)
+                p.close()
+                p.join()
+        else:
+            for task in tasks:
+                result = processing_function(task)
+                results.append(result)
+                progress_reporting_function(phase_name, len(results), len(tasks))
+
+        return self._merge_async_results(results)
 
     def _get_best_evaluations(self, evaluations: List[TuneEvaluationResult],
                               reducer: EvaluationReducerInterface,
