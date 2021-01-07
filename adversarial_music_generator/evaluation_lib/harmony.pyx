@@ -52,7 +52,7 @@ cdef float _calculate_amount_of_disharmony_of_two_notes(int note_a_idx, int note
     cdef int pitch_b = pitches[note_b_idx]
 
 
-    cdef float overlapping_length = _calculate_overlapping_length(start_a, end_a, start_b, end_b)
+    cdef float overlapping_length = _calculate_perceived_overlapping_length(start_a, end_a, start_b, end_b)
 
     if overlapping_length == 0.0:
         return 0.0
@@ -77,5 +77,6 @@ cdef inline float _min(float a, float b):
         return b
 
 
-cdef inline float _calculate_overlapping_length(float start_a, float end_a, float start_b, float end_b):
-    return _max(0.0, _min(end_a, end_b) - _max(start_a, start_b))
+cdef inline float _calculate_perceived_overlapping_length(float start_a, float end_a, float start_b, float end_b):
+    cdef inline float hearing_inertia = 0.5
+    return _max(0.0, _min(end_a + hearing_inertia, end_b + hearing_inertia) - _max(start_a, start_b))
