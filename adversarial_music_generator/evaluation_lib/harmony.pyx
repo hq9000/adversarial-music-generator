@@ -78,5 +78,5 @@ cdef inline float _min(float a, float b):
 
 
 cdef inline float _calculate_perceived_overlapping_length(float start_a, float end_a, float start_b, float end_b):
-    cdef inline float hearing_inertia = 0.5
+    cdef inline float hearing_inertia = 1.5
     return _max(0.0, _min(end_a + hearing_inertia, end_b + hearing_inertia) - _max(start_a, start_b))
