@@ -107,13 +107,15 @@ class TuneFinderTestCase(unittest.TestCase):
 
         task = FindTunesTask(
             num_generation_iterations=100,
-            num_mutation_iterations=100,
+            num_mutation_epochs=2,
+            num_mutation_iterations_in_epoch=100,
+            num_tunes_to_keep_after_mutation_epoch=10,
+            num_tunes_to_keep_from_generation=4,
             generator=generator,
             mutator=mutator,
             reducer=reducer,
             evaluator=evaluator,
             num_tunes_to_find=1,
-            num_tunes_to_mutate=4,
             base_seed="a",
             parallelize=parallelize
         )
