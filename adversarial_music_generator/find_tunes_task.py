@@ -19,3 +19,4 @@ class FindTunesTask:
     num_tunes_to_find: int
     base_seed: str
     parallelize: bool = True
+    chunk_size: int = 1000

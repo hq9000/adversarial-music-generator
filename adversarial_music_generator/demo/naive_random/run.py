@@ -15,15 +15,19 @@ evaluator = NaiveRandomEvaluator()
 reducer = NaiveRandomReducer()
 mutator = NaiveRandomMutator()
 
+base_seed = "whatever2"
+
 task = FindTunesTask(
     generator=generator,
     evaluator=evaluator,
     reducer=reducer,
     mutator=mutator,
-    num_generation_iterations=5000,
-    num_mutation_iterations=1000,
-    num_tunes_to_mutate=4,
-    base_seed="whatever",
+    num_generation_iterations=8000,
+    num_mutation_iterations_in_epoch=4000,
+    num_mutation_epochs=20,
+    num_tunes_to_keep_from_generation=40,
+    num_tunes_to_keep_after_mutation_epoch=40,
+    base_seed=base_seed,
     num_tunes_to_find=3,
     parallelize=True
 )
@@ -33,4 +37,4 @@ tunes = finder.find_tunes(task)
 for i, tune in enumerate(tunes):
     to_midi_converter = TuneToMidiConverter()
     dir_path = os.path.dirname(os.path.realpath(__file__))
-    to_midi_converter.convert(tune, dir_path + '/output/' + str(i) + ".mid")
+    to_midi_converter.convert(tune, dir_path + '/output/' + base_seed + "_" + str(i) + ".mid")

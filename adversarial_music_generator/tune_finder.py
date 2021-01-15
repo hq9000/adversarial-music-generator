@@ -14,7 +14,9 @@ from adversarial_music_generator.tune_finder_interface import TuneFinderInterfac
 
 SearchResultsDict = Dict[str, TuneEvaluationResult]
 MutationSearchResultsDict = Dict[str, TuneEvaluationResult]
-ProgressReportingFunction = Callable[[str, int, int], None]
+ProgressReportingFunction = Callable[
+    [str, int, int, List[TuneEvaluationResult], List[List[TuneEvaluationResult]], Dict], None
+]
 
 
 class TuneFinderError(Exception):
@@ -112,7 +114,7 @@ def _handle_mutation_search_task(task: MutationSearchTask) -> List[TuneEvaluatio
 class TuneFinder(TuneFinderInterface):
     def find_tunes(self, find_task: FindTunesTask) -> List[Tune]:
 
-        chunk_size = 150
+        chunk_size = find_task.chunk_size
 
         random_search_tasks = self._generate_random_search_tasks(
             num_iterations=find_task.num_generation_iterations,
@@ -122,8 +124,44 @@ class TuneFinder(TuneFinderInterface):
             chunk_size=chunk_size
         )
 
-        def progress_reporting_function(phase: str, iterations_done: int, total_iterations: int):
-            print(phase, iterations_done, "of", total_iterations)
+        # noinspection PyUnusedLocal
+        def progress_reporting_function_impl(phase: str, iterations_done: int, total_iterations: int,
+                                             new_results: List[TuneEvaluationResult],
+                                             results_so_far: List[List[TuneEvaluationResult]],
+                                             memory: Dict):
+            """
+
+            :param str phase:
+            :param int iterations_done:
+            :param int total_iterations:
+            :param List[TuneEvaluationResult] new_results:
+            :param List[List[TuneEvaluationResult]] results_so_far:
+            :param Dict memory: a "persistent" memory object
+                                provided by the outer process (empty at the beginning)
+            :return:
+            """
+            locally_best_evaluations = self._get_best_evaluations(new_results, find_task.reducer, 1)
+            locally_best_score = find_task.reducer.reduce(locally_best_evaluations[0])
+
+            best_score_memory_key = 'best_score'
+            best_evaluation_memory_key = 'best_evaluation'
+
+            if best_score_memory_key not in memory:
+                memory[best_score_memory_key] = locally_best_score
+                memory[best_evaluation_memory_key] = locally_best_evaluations[0]
+
+            if memory[best_score_memory_key] < locally_best_score:
+                memory[best_score_memory_key] = locally_best_score
+                memory[best_evaluation_memory_key] = locally_best_evaluations[0]
+
+            best_score = memory[best_score_memory_key]
+            best_evaluation = memory[best_evaluation_memory_key]
+
+            print(phase, iterations_done, "of", total_iterations, ' best score:', best_score)
+
+        # the line below is to basically have a type-hinted var and notice in IDE if
+        # the function implementation violates the contract
+        progress_reporting_function: ProgressReportingFunction = progress_reporting_function_impl
 
         random_search_results = self._run_tasks(
             find_task=find_task,
@@ -140,6 +178,9 @@ class TuneFinder(TuneFinderInterface):
         best_blueprints: List[TuneBlueprint] = [x.blueprint for x in best_tune_evaluations]
 
         for epoch in range(find_task.num_mutation_epochs):
+            print("=========================")
+            print("mutation epoch " + str(epoch))
+            print("=========================")
             mutation_search_tasks = self._generate_mutation_search_tasks(
                 num_iterations=find_task.num_mutation_iterations_in_epoch,
                 best_tunes_blueprints=best_blueprints,
@@ -147,7 +188,7 @@ class TuneFinder(TuneFinderInterface):
                 mutator=find_task.mutator,
                 generator=find_task.generator,
                 chunk_size=chunk_size,
-                base_mutation_seed_str=find_task.base_seed + "_mutation"
+                base_mutation_seed_str=find_task.base_seed + "_mutation_epoch_" + str(epoch) + "_"
             )
 
             mutation_results = self._run_tasks(
@@ -175,9 +216,12 @@ class TuneFinder(TuneFinderInterface):
 
         results: List = []
 
+        progress_reporting_memory = {}
+
         def register_result(result):
             results.append(result)
-            progress_reporting_function(phase_name, len(results), len(tasks))
+            progress_reporting_function(phase_name, len(results), len(tasks), result, results,
+                                        progress_reporting_memory)
 
         if find_task.parallelize:
             with Pool(self._get_pool_size()) as p:
@@ -189,7 +233,7 @@ class TuneFinder(TuneFinderInterface):
             for task in tasks:
                 result = processing_function(task)
                 results.append(result)
-                progress_reporting_function(phase_name, len(results), len(tasks))
+                progress_reporting_function(phase_name, len(results), len(tasks), result, results, progress_reporting_memory)
 
         return self._merge_async_results(results)
 
