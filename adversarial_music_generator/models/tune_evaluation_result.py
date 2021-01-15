@@ -1,5 +1,7 @@
 from dataclasses import dataclass
-from typing import Dict, List
+from typing import Dict, List, Optional
+
+from adversarial_music_generator.models.tune_blueprint import TuneBlueprint
 
 
 class TuneEvaluationError(Exception):
@@ -8,18 +10,16 @@ class TuneEvaluationError(Exception):
 
 class TuneEvaluationResult:
     """
-    instances of this class represent two things at once:
-    - tune evaluation (possible after certain normalization)
-    - seeds needed to reproduce the tune (but not the tune itself), namely:
-      - generator seed
-      - a list of mutator seeds
+    instances of this class contain:
+    - a tune evaluation
+    - a tune blueprint, that is, a structure that keeps seeds
+      needed to reproduce a tune (but not the tune itself)
     """
     UNDEFINED_SEED = 'undefined'
 
     def __init__(self):
         self._aspects: Dict[str, float] = {}
-        self.generator_seed: str = self.UNDEFINED_SEED
-        self.mutator_seeds: List[str] = []
+        self.blueprint: Optional[TuneBlueprint] = None
         pass
 
     def set_aspect_value(self, aspect: str, value: float):

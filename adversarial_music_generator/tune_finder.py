@@ -2,12 +2,13 @@ import logging
 from copy import deepcopy
 from dataclasses import dataclass
 from multiprocessing.pool import Pool
-from typing import Dict, List, cast, Callable
+from typing import Dict, List, Callable
 
 from adversarial_music_generator.find_tunes_task import FindTunesTask
 from adversarial_music_generator.interfaces import TuneGeneratorInterface, TuneMutatorInterface, \
     TuneEvaluatorInterface, EvaluationReducerInterface
 from adversarial_music_generator.models.tune import Tune
+from adversarial_music_generator.models.tune_blueprint import TuneBlueprint
 from adversarial_music_generator.models.tune_evaluation_result import TuneEvaluationResult
 from adversarial_music_generator.tune_finder_interface import TuneFinderInterface
 
@@ -33,13 +34,22 @@ class GenerationSearchTask:
 
 @dataclass
 class MutationSearchTask:
-    generation_seed_strs: List[str]
+    initial_tunes_blueprints: List[TuneBlueprint]
     base_mutation_seed_str: str
     start_idx: int
     end_idx: int
     generator: TuneGeneratorInterface
     evaluator: TuneEvaluatorInterface
     mutator: TuneMutatorInterface
+
+
+def _generate_tune_by_blueprint(blueprint: TuneBlueprint, generator: TuneGeneratorInterface,
+                                mutator: TuneMutatorInterface) -> Tune:
+    tune = generator.generate_tunes([blueprint.generation_seed])[0]
+    for mutation_seed in blueprint.mutation_seeds:
+        mutator.mutate_tune(tune, mutation_seed)
+
+    return tune
 
 
 def _handle_generation_search_task(task: GenerationSearchTask) -> List[TuneEvaluationResult]:
@@ -57,29 +67,28 @@ def _handle_generation_search_task(task: GenerationSearchTask) -> List[TuneEvalu
         raise TuneFinderError('size mismatch (error: 93bf5bcc)')
 
     for seed, evaluation in zip(seeds, evaluations):
-        evaluation.generator_seed = seed
+        evaluation.blueprint = TuneBlueprint(generation_seed=seed, mutation_seeds=[])
 
     return evaluations
 
 
 def _handle_mutation_search_task(task: MutationSearchTask) -> List[TuneEvaluationResult]:
-    generator = task.generator
     evaluator = task.evaluator
     mutator = task.mutator
 
-    source_tunes = generator.generate_tunes(task.generation_seed_strs)
-    source_tunes_dict = {gen_seed: tune for (gen_seed, tune) in zip(task.generation_seed_strs, source_tunes)}
+    source_tunes = [_generate_tune_by_blueprint(x, task.generator, task.mutator) for x in task.initial_tunes_blueprints]
 
     mutated_tunes: List[Tune] = []
-    mutation_seeds: List[str] = []
-    generation_seeds: List[str] = []
+    mutated_tunes_blueprints: List[TuneBlueprint] = []
 
     for i in range(task.start_idx, task.end_idx):
-        source_tune_seed = task.generation_seed_strs[i % len(task.generation_seed_strs)]
-        source_tune = source_tunes_dict[source_tune_seed]
-        tune_copy_for_mutation = deepcopy(source_tune)
+        source_tune = source_tunes[i % len(source_tunes)]
+        source_tune_blueprint = task.initial_tunes_blueprints[i % len(source_tunes)]
 
-        if i >= len(task.generation_seed_strs):
+        tune_copy_for_mutation = deepcopy(source_tune)
+        cloned_blueprint = deepcopy(source_tune_blueprint)
+
+        if i >= len(task.initial_tunes_blueprints):
             # first N tunes (one for every original seed)
             # go unmutated to leave the original
             # tunes in the evaluated set (in case no mutations bring any
@@ -88,17 +97,16 @@ def _handle_mutation_search_task(task: MutationSearchTask) -> List[TuneEvaluatio
         else:
             mutation_seed = TuneMutatorInterface.SPECIAL_SEED_STR_TO_LEAVE_TUNE_UNMUTATED
 
-        mutation_seeds.append(mutation_seed)
-        generation_seeds.append(source_tune_seed)
         mutator.mutate_tune(tune_copy_for_mutation, mutation_seed)
+        cloned_blueprint.mutation_seeds.append(mutation_seed)
+
         mutated_tunes.append(tune_copy_for_mutation)
+        mutated_tunes_blueprints.append(cloned_blueprint)
 
     evaluations = evaluator.evaluate_tunes(mutated_tunes)
 
-    for (evaluation, generation_seed, mutation_seed) in zip(evaluations, generation_seeds, mutation_seeds):
-        evaluation = cast(TuneEvaluationResult, evaluation)
-        evaluation.generator_seed = generation_seed
-        evaluation.mutator_seeds = [mutation_seed]
+    for (evaluation, blueprint) in zip(evaluations, mutated_tunes_blueprints):
+        evaluation.blueprint = blueprint
 
     return evaluations
 
@@ -106,7 +114,7 @@ def _handle_mutation_search_task(task: MutationSearchTask) -> List[TuneEvaluatio
 class TuneFinder(TuneFinderInterface):
     def find_tunes(self, find_task: FindTunesTask) -> List[Tune]:
 
-        chunk_size = 1000
+        chunk_size = find_task.chunk_size
 
         random_search_tasks = self._generate_random_search_tasks(
             num_iterations=find_task.num_generation_iterations,
@@ -162,43 +170,46 @@ class TuneFinder(TuneFinderInterface):
             progress_reporting_function=progress_reporting_function,
             phase_name='random search')
 
-        num_tunes_to_mutate = find_task.num_tunes_to_mutate
+        num_tunes_to_mutate = find_task.num_tunes_to_keep_from_generation
         best_tune_evaluations: List[TuneEvaluationResult] = self._get_best_evaluations(random_search_results,
                                                                                        find_task.reducer,
                                                                                        num_tunes_to_mutate)
-        best_tunes_generation_seeds: List[str] = [x.generator_seed for x in best_tune_evaluations]
 
-        mutation_search_tasks = self._generate_mutation_search_tasks(
-            num_iterations=find_task.num_mutation_iterations,
-            best_tunes_generation_seeds=best_tunes_generation_seeds,
-            evaluator=find_task.evaluator,
-            mutator=find_task.mutator,
-            generator=find_task.generator,
-            chunk_size=chunk_size,
-            base_mutation_seed_str=find_task.base_seed + "_mutation"
-        )
+        best_blueprints: List[TuneBlueprint] = [x.blueprint for x in best_tune_evaluations]
 
-        mutation_results = self._run_tasks(
-            find_task=find_task,
-            processing_function=_handle_mutation_search_task,
-            tasks=mutation_search_tasks,
-            progress_reporting_function=progress_reporting_function,
-            phase_name="mutation"
-        )
-
-        best_tune_evaluations = self._get_best_evaluations(mutation_results, find_task.reducer,
-                                                           find_task.num_tunes_to_find)
-
-        res: List[Tune] = []
-        for i in range(find_task.num_tunes_to_find):
-            res.append(self._generate_tune_by_mutation_chain(
-                generator=find_task.generator,
+        for epoch in range(find_task.num_mutation_epochs):
+            print("=========================")
+            print("mutation epoch " + str(epoch))
+            print("=========================")
+            mutation_search_tasks = self._generate_mutation_search_tasks(
+                num_iterations=find_task.num_mutation_iterations_in_epoch,
+                best_tunes_blueprints=best_blueprints,
+                evaluator=find_task.evaluator,
                 mutator=find_task.mutator,
-                generator_seed_str=best_tune_evaluations[i].generator_seed,
-                mutation_seed_str_chain=best_tune_evaluations[i].mutator_seeds)
+                generator=find_task.generator,
+                chunk_size=chunk_size,
+                base_mutation_seed_str=find_task.base_seed + "_mutation_epoch_" + str(epoch) + "_"
             )
 
-        return res
+            mutation_results = self._run_tasks(
+                find_task=find_task,
+                processing_function=_handle_mutation_search_task,
+                tasks=mutation_search_tasks,
+                progress_reporting_function=progress_reporting_function,
+                phase_name="mutation"
+            )
+
+            if epoch < find_task.num_mutation_epochs - 1:
+                num_tunes_to_keep = find_task.num_tunes_to_keep_after_mutation_epoch
+            else:
+                num_tunes_to_keep = find_task.num_tunes_to_find
+
+            best_tune_evaluations = self._get_best_evaluations(mutation_results, find_task.reducer,
+                                                               num_tunes_to_keep)
+
+            best_blueprints = [x.blueprint for x in best_tune_evaluations]
+
+        return [_generate_tune_by_blueprint(bp, find_task.generator, find_task.mutator) for bp in best_blueprints]
 
     def _run_tasks(self, find_task: FindTunesTask, processing_function: callable, tasks: List,
                    progress_reporting_function: ProgressReportingFunction, phase_name: str) -> List:
@@ -253,7 +264,7 @@ class TuneFinder(TuneFinderInterface):
 
         return tasks
 
-    def _generate_mutation_search_tasks(self, num_iterations, best_tunes_generation_seeds: List[str],
+    def _generate_mutation_search_tasks(self, num_iterations, best_tunes_blueprints: List[TuneBlueprint],
                                         base_mutation_seed_str: str,
                                         generator: TuneGeneratorInterface, mutator: TuneMutatorInterface,
                                         evaluator: TuneEvaluatorInterface,
@@ -267,7 +278,7 @@ class TuneFinder(TuneFinderInterface):
                 generator=generator,
                 evaluator=evaluator,
                 mutator=mutator,
-                generation_seed_strs=best_tunes_generation_seeds,
+                initial_tunes_blueprints=best_tunes_blueprints,
                 base_mutation_seed_str=base_mutation_seed_str
             )
             tasks.append(task)
