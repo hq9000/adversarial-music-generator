@@ -8,4 +8,4 @@ class Track:
     def __init__(self, timbre: Timbre):
         self.timbre: Timbre = timbre
         self.notes: List[Note] = []
-        tag: Optional = None
+        self.tag: Optional = None
