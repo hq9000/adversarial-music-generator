@@ -11,7 +11,7 @@ from adversarial_music_generator.tune_to_midi_converter import TuneToMidiConvert
 finder = TuneFinder()
 
 generator = NaiveRandomGenerator()
-evaluator = NaiveRandomEvaluator()
+evaluator = NaiveRandomEvaluator(generator)
 reducer = NaiveRandomReducer()
 mutator = NaiveRandomMutator()
 

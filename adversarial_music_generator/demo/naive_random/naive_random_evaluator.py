@@ -1,27 +1,25 @@
 from array import array
-from typing import List, Dict
+from typing import List
 
 from pyximport import pyximport
-from adversarial_music_generator.interfaces import TuneEvaluatorInterface
+
+from adversarial_music_generator.calibrating_tune_evaluator import CalibratingTuneEvaluator
+from adversarial_music_generator.interfaces import TuneGeneratorInterface
 from adversarial_music_generator.models.note import Note
 from adversarial_music_generator.models.tune import Tune
 from adversarial_music_generator.models.tune_evaluation_result import TuneEvaluationResult
-from adversarial_music_generator.demo.naive_random.naive_random_generator import NaiveRandomGenerator
 
 pyximport.install()
 from adversarial_music_generator.evaluation_lib.harmony import calculate_disharmony
 
 
-class NaiveRandomEvaluator(TuneEvaluatorInterface):
+class NaiveRandomEvaluator(CalibratingTuneEvaluator):
     ASPECT_RHYTHMICALITY = 'rhythmicality'
     ASPECT_HARMONY = 'harmony'
     ASPECT_CONTENT = 'content'
 
-    def __init__(self):
-        self._calibrated: bool = False
-        self._min_calibration_values: Dict[str, float] = {}
-        self._max_calibration_values: Dict[str, float] = {}
-        self._has_to_normalize: bool = True
+    def __init__(self, generator_for_calibration: TuneGeneratorInterface):
+        super().__init__(generator_for_calibration)
 
     def get_aspects(self) -> List[str]:
         return [
@@ -30,35 +28,13 @@ class NaiveRandomEvaluator(TuneEvaluatorInterface):
             self.ASPECT_CONTENT
         ]
 
-    def evaluate_tunes(self, tunes: List[Tune]) -> List[TuneEvaluationResult]:
-
-        if self._has_to_normalize:
-            if not self._calibrated:
-                self._calibrate()
-
-        return [self._evaluate_one_tune(tune) for tune in tunes]
-
-    def _evaluate_one_tune(self, tune: Tune) -> TuneEvaluationResult:
+    def _evaluate_one_tune_without_normalization(self, tune: Tune) -> TuneEvaluationResult:
         res = TuneEvaluationResult()
 
         # res.set_aspect_value(self.ASPECT_HARMONY, self._evaluate_harmony(tune))
         res.set_aspect_value(self.ASPECT_HARMONY, self._evaluate_harmony_optimized(tune))
         res.set_aspect_value(self.ASPECT_RHYTHMICALITY, self._evaluate_rhythmicality(tune))
         res.set_aspect_value(self.ASPECT_CONTENT, self._evaluate_content(tune))
-
-        if self._has_to_normalize:
-            for aspect in self.get_aspects():
-                raw_value = res.get_aspect_value(aspect)
-                min_value = self._min_calibration_values[aspect]
-                max_value = self._max_calibration_values[aspect]
-
-                if min_value == max_value:
-                    normalized_value = min_value  # this is actually an error
-                else:
-                    normalized_value = (raw_value - min_value) / (max_value - min_value)
-
-                res.set_aspect_value(aspect, normalized_value)
-
         return res
 
     def _evaluate_harmony(self, tune: Tune) -> float:
@@ -121,32 +97,3 @@ class NaiveRandomEvaluator(TuneEvaluatorInterface):
         expected_mean_num_notes = 20
         diff = tune.num_notes - expected_mean_num_notes
         return 1.0 - abs(diff)
-
-    def _calibrate(self):
-
-        generator = NaiveRandomGenerator()
-
-        seeds = ['calibrate' + str(i) for i in range(100)]
-        tunes = generator.generate_tunes(seeds)
-
-        # temporarily disabling normalizing to avoid a loop
-        self._has_to_normalize = False
-
-        not_normalized_evaluations = self.evaluate_tunes(tunes)
-
-        for evaluation in not_normalized_evaluations:
-            for aspect in self.get_aspects():
-
-                value = evaluation.get_aspect_value(aspect)
-
-                if aspect not in self._min_calibration_values:
-                    self._min_calibration_values[aspect] = value
-
-                if aspect not in self._max_calibration_values:
-                    self._max_calibration_values[aspect] = value
-
-                self._min_calibration_values[aspect] = min(value, self._min_calibration_values[aspect])
-                self._max_calibration_values[aspect] = max(value, self._max_calibration_values[aspect])
-
-        self._has_to_normalize = True
-        self._calibrated = True
