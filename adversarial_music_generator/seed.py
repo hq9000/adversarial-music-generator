@@ -47,3 +47,6 @@ class Seed:
             sum_of_probabilities += add_probability
 
         raise ValueError('unable to generate a random choice (error: 8256cd68)')
+
+    def create_subseed(self, subseed_str):  # type: (str)->Seed
+        return Seed(self._seed + " " + subseed_str)
