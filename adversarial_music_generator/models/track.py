@@ -1,4 +1,4 @@
-from typing import List, Optional, Dict, Any
+from typing import List, Dict, Any
 
 from adversarial_music_generator.models.note import Note
 from adversarial_music_generator.models.timbre import Timbre

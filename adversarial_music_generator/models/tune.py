@@ -8,7 +8,8 @@ class Tune:
     def __init__(self):
         self.tracks: List[Track] = []
         self.bpm: float = 120.0
-        self.grid_start: float = 0.0
+        self.start_time: float = 0.0
+        self.end_time: float = 10.0
 
     def all_notes(self) -> Iterator[Note]:
         for track in self.tracks:
