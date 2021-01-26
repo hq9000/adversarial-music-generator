@@ -8,11 +8,12 @@ from adversarial_music_generator.models.tune_evaluation_result import TuneEvalua
 
 class CalibratingTuneEvaluator(TuneEvaluatorInterface, ABC):
 
-    def __init__(self, generator_for_calibration: TuneGeneratorInterface):
+    def __init__(self, generator_for_calibration: TuneGeneratorInterface, num_calibration_iterations: int = 100):
         self._calibrated: bool = False
         self._generator_for_calibration: TuneGeneratorInterface = generator_for_calibration
         self._min_calibration_values: Dict[str, float] = {}
         self._max_calibration_values: Dict[str, float] = {}
+        self._num_calibration_iterations: int = num_calibration_iterations
 
     def evaluate_tunes(self, tunes: List[Tune]) -> List[TuneEvaluationResult]:
         if not self._calibrated:
@@ -26,7 +27,7 @@ class CalibratingTuneEvaluator(TuneEvaluatorInterface, ABC):
 
     def _calibrate(self, generator: TuneGeneratorInterface) -> None:
 
-        seeds = ['calibrate' + str(i) for i in range(100)]
+        seeds = ['calibrate' + str(i) for i in range(self._num_calibration_iterations)]
         tunes = generator.generate_tunes(seeds)
 
         not_normalized_evaluations = [self._evaluate_one_tune_without_normalization(x) for x in tunes]
