@@ -10,8 +10,8 @@ from adversarial_music_generator.seed import Seed
 
 
 class NaiveRandomGenerator(TuneGeneratorInterface):
-    def generate_tunes(self, seeds: List[str]) -> List[Tune]:
-        return [self._generate_one_tune(seed) for seed in seeds]
+    def generate_tunes(self, generator_seed: str, tune_seeds: List[str]) -> List[Tune]:
+        return [self._generate_one_tune(seed) for seed in tune_seeds]
 
     def _generate_one_tune(self, seed: str) -> Tune:
         res = Tune()

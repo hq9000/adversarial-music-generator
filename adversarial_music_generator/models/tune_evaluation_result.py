@@ -12,7 +12,7 @@ class TuneEvaluationResult:
     """
     instances of this class contain:
     - a tune evaluation
-    - a tune blueprint, that is, a structure that keeps seeds
+    - a tune blueprint, that is, a structure that keeps tune_seeds
       needed to reproduce a tune (but not the tune itself)
     """
     UNDEFINED_SEED = 'undefined'
