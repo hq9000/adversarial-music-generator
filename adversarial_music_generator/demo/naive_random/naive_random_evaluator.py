@@ -18,8 +18,8 @@ class NaiveRandomEvaluator(CalibratingTuneEvaluator):
     ASPECT_HARMONY = 'harmony'
     ASPECT_CONTENT = 'content'
 
-    def __init__(self, generator_for_calibration: TuneGeneratorInterface):
-        super().__init__(generator_for_calibration)
+    def __init__(self, generator_for_calibration: TuneGeneratorInterface, generator_seed_for_calibration: str):
+        super().__init__(generator_for_calibration, generator_seed_for_calibration)
 
     def get_aspects(self) -> List[str]:
         return [
