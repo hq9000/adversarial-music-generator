@@ -4,5 +4,6 @@ from typing import List
 
 @dataclass
 class TuneBlueprint:
-    generation_seed: str
+    generator_seed: str
+    tune_seed: str
     mutation_seeds: List[str]

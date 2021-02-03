@@ -7,7 +7,7 @@ from adversarial_music_generator.models.tune_evaluation_result import TuneEvalua
 
 class TuneGeneratorInterface(ABC):
     @abstractmethod
-    def generate_tunes(self, seeds: List[str]) -> List[Tune]:
+    def generate_tunes(self, generator_seed: str, tune_seeds: List[str]) -> List[Tune]:
         pass
 
 

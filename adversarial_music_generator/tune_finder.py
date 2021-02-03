@@ -45,7 +45,7 @@ class MutationSearchTask:
 
 def _generate_tune_by_blueprint(blueprint: TuneBlueprint, generator: TuneGeneratorInterface,
                                 mutator: TuneMutatorInterface) -> Tune:
-    tune = generator.generate_tunes([blueprint.generation_seed])[0]
+    tune = generator.generate_tunes(blueprint.generator_seed, [blueprint.tune_seed])[0]
     for mutation_seed in blueprint.mutation_seeds:
         mutator.mutate_tune(tune, mutation_seed)
 
@@ -60,14 +60,14 @@ def _handle_generation_search_task(task: GenerationSearchTask) -> List[TuneEvalu
 
     seeds = [task.base_seed_str + str(i) for i in range(task.start_idx, task.end_idx)]
 
-    tunes = generator.generate_tunes(seeds)
+    tunes = generator.generate_tunes(task.base_seed_str, seeds)
     evaluations = evaluator.evaluate_tunes(tunes)
 
     if len(tunes) != len(evaluations) or len(seeds) != len(evaluations):
         raise TuneFinderError('size mismatch (error: 93bf5bcc)')
 
     for seed, evaluation in zip(seeds, evaluations):
-        evaluation.blueprint = TuneBlueprint(generation_seed=seed, mutation_seeds=[])
+        evaluation.blueprint = TuneBlueprint(generator_seed=task.base_seed_str, tune_seed=seed, mutation_seeds=[])
 
     return evaluations
 

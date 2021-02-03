@@ -13,7 +13,7 @@ class MyTestCase(unittest.TestCase):
         finder = TuneFinder()
 
         generator = NaiveRandomGenerator()
-        evaluator = NaiveRandomEvaluator(generator)
+        evaluator = NaiveRandomEvaluator(generator, "qwerty")
         reducer = NaiveRandomReducer()
         mutator = NaiveRandomMutator()
 

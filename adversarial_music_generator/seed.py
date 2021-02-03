@@ -11,7 +11,7 @@ class Seed:
 
     This one is actually copy-pasted from py-headless-daw repo
     Requirements:
-      - similar seeds should produce similar outputs
+      - similar tune_seeds should produce similar outputs
       - ...
     """
 
