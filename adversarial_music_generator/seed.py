@@ -7,7 +7,7 @@ RandomChoiceOptions = Dict[T, int]
 
 class Seed:
     """
-    A controllable random seed for all kinds of repeatable random uses
+    A controllable random tune_seed for all kinds of repeatable random uses
 
     This one is actually copy-pasted from py-headless-daw repo
     Requirements:
@@ -16,7 +16,7 @@ class Seed:
     """
 
     def __init__(self, seed: str = None):
-        self._seed: str = 'default seed'
+        self._seed: str = 'default tune_seed'
         if seed is not None:
             self._seed = seed
         self._generator: Random = Random(seed)

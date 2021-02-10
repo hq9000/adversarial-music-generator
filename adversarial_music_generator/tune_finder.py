@@ -89,7 +89,7 @@ def _handle_mutation_search_task(task: MutationSearchTask) -> List[TuneEvaluatio
         cloned_blueprint = deepcopy(source_tune_blueprint)
 
         if i >= len(task.initial_tunes_blueprints):
-            # first N tunes (one for every original seed)
+            # first N tunes (one for every original tune_seed)
             # go unmutated to leave the original
             # tunes in the evaluated set (in case no mutations bring any
             # improvement)

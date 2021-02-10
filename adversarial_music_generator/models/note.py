@@ -6,5 +6,5 @@ class Note:
     note: int
     start_time_seconds: float
     end_time_seconds: float
-    velocity: int
+    velocity: float
     removed: bool = False

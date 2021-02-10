@@ -20,7 +20,7 @@ class TuneToMidiConverter:
             for note in track.notes:
                 start_time_in_quarters = note.start_time_seconds / length_of_quarter_seconds
                 length_in_quarters = (note.end_time_seconds - note.start_time_seconds) / length_of_quarter_seconds
-                midi_file.addNote(idx, idx, note.note, start_time_in_quarters, length_in_quarters, note.velocity)
+                midi_file.addNote(idx, idx, note.note, start_time_in_quarters, length_in_quarters, round(note.velocity * 127))
 
         with open(output_file_path, "wb") as output_file:
             midi_file.writeFile(output_file)
