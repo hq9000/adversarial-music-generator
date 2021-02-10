@@ -25,7 +25,8 @@ class MyTestCase(unittest.TestCase):
         track1: Track = Track(TimbreRepository.lead)
 
         track1.notes = [
-            Note(start_time_seconds=0.0, note=65, velocity=100, end_time_seconds=0.99)
+            Note(start_time_seconds=0.0, note=65, velocity=1.0, end_time_seconds=0.99),
+            Note(start_time_seconds=0.6, note=65, velocity=0.0, end_time_seconds=0.95)
         ]
 
         res.tracks = [track1]

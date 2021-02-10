@@ -18,7 +18,7 @@ class MockTuneGenerator(TuneGeneratorInterface):
         return [self._generate_one_tune(s) for s in tune_seeds]
 
     def _generate_one_tune(self, seed: str) -> Tune:
-        # seed is expected to end up with a number,
+        # tune_seed is expected to end up with a number,
         # this number we use to generate that many notes
 
         only_digits = re.sub(r"\D", "", seed)
