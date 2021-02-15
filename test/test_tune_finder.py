@@ -2,6 +2,7 @@ import unittest
 from typing import List
 import re
 
+from adversarial_music_generator.demo.naive_random.donothing_postprocessor import DoNothingPostprocessor
 from adversarial_music_generator.find_tunes_task import FindTunesTask
 from adversarial_music_generator.interfaces import TuneGeneratorInterface, TuneEvaluatorInterface, TuneMutatorInterface, \
     EvaluationReducerInterface
@@ -120,7 +121,8 @@ class TuneFinderTestCase(unittest.TestCase):
             num_tunes_to_find=1,
             base_seed="a",
             parallelize=parallelize,
-            chunk_size=chunk_size
+            chunk_size=chunk_size,
+            postprocessor=DoNothingPostprocessor()
         )
 
         tunes = tune_finder.find_tunes(task)

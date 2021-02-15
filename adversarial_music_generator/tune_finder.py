@@ -126,6 +126,7 @@ class TuneFinder(TuneFinderInterface):
             base_seed_str=find_task.base_seed,
             generator=find_task.generator,
             evaluator=find_task.evaluator,
+            postprocessor=find_task.postprocessor,
             chunk_size=chunk_size
         )
 
@@ -193,7 +194,8 @@ class TuneFinder(TuneFinderInterface):
                 mutator=find_task.mutator,
                 generator=find_task.generator,
                 chunk_size=chunk_size,
-                base_mutation_seed_str=find_task.base_seed + "_mutation_epoch_" + str(epoch) + "_"
+                base_mutation_seed_str=find_task.base_seed + "_mutation_epoch_" + str(epoch) + "_",
+                postprocessor=find_task.postprocessor
             )
 
             mutation_results = self._run_tasks(
@@ -214,7 +216,7 @@ class TuneFinder(TuneFinderInterface):
 
             best_blueprints = [x.blueprint for x in best_tune_evaluations]
 
-        return [_generate_tune_by_blueprint(bp, find_task.generator, find_task.mutator) for bp in best_blueprints]
+        return [_generate_tune_by_blueprint(bp, find_task.generator, find_task.mutator, find_task.postprocessor) for bp in best_blueprints]
 
     def _run_tasks(self, find_task: FindTunesTask, processing_function: callable, tasks: List,
                    progress_reporting_function: ProgressReportingFunction, phase_name: str) -> List:
@@ -253,7 +255,7 @@ class TuneFinder(TuneFinderInterface):
         return evaluations[0:how_many]
 
     def _generate_random_search_tasks(self, num_iterations: int, base_seed_str: str, generator: TuneGeneratorInterface,
-                                      evaluator: TuneEvaluatorInterface, chunk_size: int) -> List[GenerationSearchTask]:
+                                      evaluator: TuneEvaluatorInterface, postprocessor: TuneProcessorInterface, chunk_size: int) -> List[GenerationSearchTask]:
         cursor = 0
         tasks = []
         while cursor < num_iterations:
@@ -262,7 +264,8 @@ class TuneFinder(TuneFinderInterface):
                 end_idx=min(cursor + chunk_size, num_iterations),
                 generator=generator,
                 evaluator=evaluator,
-                base_seed_str=base_seed_str
+                base_seed_str=base_seed_str,
+                postprocessor=postprocessor
             )
             tasks.append(task)
             cursor += chunk_size
@@ -273,6 +276,7 @@ class TuneFinder(TuneFinderInterface):
                                         base_mutation_seed_str: str,
                                         generator: TuneGeneratorInterface, mutator: TuneMutatorInterface,
                                         evaluator: TuneEvaluatorInterface,
+                                        postprocessor: TuneProcessorInterface,
                                         chunk_size: int) -> List[MutationSearchTask]:
         cursor = 0
         tasks = []
@@ -284,7 +288,8 @@ class TuneFinder(TuneFinderInterface):
                 evaluator=evaluator,
                 mutator=mutator,
                 initial_tunes_blueprints=best_tunes_blueprints,
-                base_mutation_seed_str=base_mutation_seed_str
+                base_mutation_seed_str=base_mutation_seed_str,
+                postprocessor=postprocessor
             )
             tasks.append(task)
             cursor += chunk_size
