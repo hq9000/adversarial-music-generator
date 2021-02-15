@@ -2,13 +2,14 @@ from dataclasses import dataclass
 from typing import Optional
 
 from adversarial_music_generator.interfaces import TuneGeneratorInterface, TuneEvaluatorInterface, \
-    EvaluationReducerInterface, TuneMutatorInterface
+    EvaluationReducerInterface, TuneMutatorInterface, TuneProcessorInterface
 
 
 @dataclass
 class FindTunesTask:
     generator: TuneGeneratorInterface
     evaluator: TuneEvaluatorInterface
+    postprocessor: TuneProcessorInterface
     reducer: EvaluationReducerInterface
     mutator: TuneMutatorInterface
     num_generation_iterations: int

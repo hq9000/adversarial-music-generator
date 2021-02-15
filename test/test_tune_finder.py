@@ -2,9 +2,10 @@ import unittest
 from typing import List
 import re
 
+from adversarial_music_generator.demo.naive_random.donothing_postprocessor import DoNothingPostprocessor
 from adversarial_music_generator.find_tunes_task import FindTunesTask
 from adversarial_music_generator.interfaces import TuneGeneratorInterface, TuneEvaluatorInterface, TuneMutatorInterface, \
-    EvaluationReducerInterface
+    EvaluationReducerInterface, TuneProcessorInterface
 from adversarial_music_generator.models.note import Note
 from adversarial_music_generator.models.timbre_repository import TimbreRepository
 from adversarial_music_generator.models.track import Track
@@ -74,6 +75,17 @@ class MockReducer(EvaluationReducerInterface):
         return result.get_aspect_value(TuneFinderTestCase.ASPECT_NUM_NOTES)
 
 
+class MockPostprocessor(TuneProcessorInterface):
+    def process(self, tune: Tune):
+        """
+        into the first track we insert the note at time 0 with pitch "1313"
+        :param tune:
+        :return:
+        """
+        tune.tracks[0].notes.append(Note(1313, .0, .13, 13))
+        pass
+
+
 class TuneFinderTestCase(unittest.TestCase):
     """
     In this test case we use some very predictable generator, mutator, evaluator, and reducer.
@@ -106,6 +118,7 @@ class TuneFinderTestCase(unittest.TestCase):
         generator, evaluator = self._create_generator(), self._create_evaluator()
         reducer = self._create_reducer()
         mutator = self._create_mutator()
+        postprocessor = self._create_postprocessor()
 
         task = FindTunesTask(
             num_generation_iterations=100,
@@ -120,13 +133,14 @@ class TuneFinderTestCase(unittest.TestCase):
             num_tunes_to_find=1,
             base_seed="a",
             parallelize=parallelize,
-            chunk_size=chunk_size
+            chunk_size=chunk_size,
+            postprocessor=postprocessor
         )
 
         tunes = tune_finder.find_tunes(task)
 
         self.assertEqual(1, len(tunes))
-        self.assertEqual(388, len(tunes[0].tracks[0].notes))
+        self.assertEqual(389, len(tunes[0].tracks[0].notes))
 
     def _create_generator(self) -> TuneGeneratorInterface:
         return MockTuneGenerator()
@@ -139,6 +153,9 @@ class TuneFinderTestCase(unittest.TestCase):
 
     def _create_reducer(self) -> EvaluationReducerInterface:
         return MockReducer()
+
+    def _create_postprocessor(self) -> TuneProcessorInterface:
+        return MockPostprocessor()
 
 
 if __name__ == '__main__':

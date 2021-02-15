@@ -1,5 +1,6 @@
 import unittest
 
+from adversarial_music_generator.demo.naive_random.donothing_postprocessor import DoNothingPostprocessor
 from adversarial_music_generator.demo.naive_random.naive_random_evaluator import NaiveRandomEvaluator
 from adversarial_music_generator.demo.naive_random.naive_random_generator import NaiveRandomGenerator
 from adversarial_music_generator.demo.naive_random.naive_random_mutator import NaiveRandomMutator
@@ -24,6 +25,7 @@ class MyTestCase(unittest.TestCase):
             evaluator=evaluator,
             reducer=reducer,
             mutator=mutator,
+            postprocessor=DoNothingPostprocessor(),
             num_generation_iterations=20,
             num_mutation_iterations_in_epoch=40,
             num_mutation_epochs=3,
