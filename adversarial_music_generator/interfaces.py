@@ -34,3 +34,10 @@ class EvaluationReducerInterface(ABC):
     @abstractmethod
     def reduce(self, result: TuneEvaluationResult) -> float:
         pass
+
+
+class TuneProcessorInterface(ABC):
+
+    @abstractmethod
+    def process(self, tune: Tune):
+        pass

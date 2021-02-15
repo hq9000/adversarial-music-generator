@@ -6,7 +6,7 @@ from typing import Dict, List, Callable
 
 from adversarial_music_generator.find_tunes_task import FindTunesTask
 from adversarial_music_generator.interfaces import TuneGeneratorInterface, TuneMutatorInterface, \
-    TuneEvaluatorInterface, EvaluationReducerInterface
+    TuneEvaluatorInterface, EvaluationReducerInterface, TuneProcessorInterface
 from adversarial_music_generator.models.tune import Tune
 from adversarial_music_generator.models.tune_blueprint import TuneBlueprint
 from adversarial_music_generator.models.tune_evaluation_result import TuneEvaluationResult
@@ -30,6 +30,7 @@ class GenerationSearchTask:
     end_idx: int
     generator: TuneGeneratorInterface
     evaluator: TuneEvaluatorInterface
+    postprocessor: TuneProcessorInterface
 
 
 @dataclass
@@ -41,14 +42,15 @@ class MutationSearchTask:
     generator: TuneGeneratorInterface
     evaluator: TuneEvaluatorInterface
     mutator: TuneMutatorInterface
+    postprocessor: TuneProcessorInterface
 
 
 def _generate_tune_by_blueprint(blueprint: TuneBlueprint, generator: TuneGeneratorInterface,
-                                mutator: TuneMutatorInterface) -> Tune:
+                                mutator: TuneMutatorInterface, postprocessor: TuneProcessorInterface) -> Tune:
     tune = generator.generate_tunes(blueprint.generator_seed, [blueprint.tune_seed])[0]
     for mutation_seed in blueprint.mutation_seeds:
         mutator.mutate_tune(tune, mutation_seed)
-
+    postprocessor.process(tune)
     return tune
 
 
@@ -61,6 +63,9 @@ def _handle_generation_search_task(task: GenerationSearchTask) -> List[TuneEvalu
     seeds = [task.base_seed_str + str(i) for i in range(task.start_idx, task.end_idx)]
 
     tunes = generator.generate_tunes(task.base_seed_str, seeds)
+    for tune in tunes:
+        task.postprocessor.process(tune)
+
     evaluations = evaluator.evaluate_tunes(tunes)
 
     if len(tunes) != len(evaluations) or len(seeds) != len(evaluations):
@@ -76,7 +81,7 @@ def _handle_mutation_search_task(task: MutationSearchTask) -> List[TuneEvaluatio
     evaluator = task.evaluator
     mutator = task.mutator
 
-    source_tunes = [_generate_tune_by_blueprint(x, task.generator, task.mutator) for x in task.initial_tunes_blueprints]
+    source_tunes = [_generate_tune_by_blueprint(x, task.generator, task.mutator, task.postprocessor) for x in task.initial_tunes_blueprints]
 
     mutated_tunes: List[Tune] = []
     mutated_tunes_blueprints: List[TuneBlueprint] = []
