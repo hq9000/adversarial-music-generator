@@ -39,5 +39,5 @@ class EvaluationReducerInterface(ABC):
 class TuneProcessorInterface(ABC):
 
     @abstractmethod
-    def process(self, tune: Tune):
+    def process(self, tune: Tune, processor_seed: str):
         pass
