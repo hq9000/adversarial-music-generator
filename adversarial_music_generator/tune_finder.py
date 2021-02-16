@@ -50,7 +50,7 @@ def _generate_tune_by_blueprint(blueprint: TuneBlueprint, generator: TuneGenerat
     tune = generator.generate_tunes(blueprint.base_seed, [blueprint.tune_seed])[0]
     for mutation_seed in blueprint.mutation_seeds:
         mutator.mutate_tune(tune, mutation_seed)
-    postprocessor.process(tune, blueprint.base_seed)
+    postprocessor.process(tune, blueprint.base_seed, blueprint.tune_seed)
     return tune
 
 
@@ -63,8 +63,8 @@ def _handle_generation_search_task(task: GenerationSearchTask) -> List[TuneEvalu
     seeds = [task.base_seed_str + str(i) for i in range(task.start_idx, task.end_idx)]
 
     tunes = generator.generate_tunes(task.base_seed_str, seeds)
-    for tune in tunes:
-        task.postprocessor.process(tune, task.base_seed_str)
+    for tune, tune_seed in zip(tunes, seeds):
+        task.postprocessor.process(tune, task.base_seed_str, tune_seed)
 
     evaluations = evaluator.evaluate_tunes(tunes)
 
