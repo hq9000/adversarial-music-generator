@@ -162,8 +162,6 @@ class TuneFinder(TuneFinderInterface):
                 memory[best_evaluation_memory_key] = locally_best_evaluations[0]
 
             best_score = memory[best_score_memory_key]
-            best_evaluation = memory[best_evaluation_memory_key]
-
             print(phase, iterations_done, "of", total_iterations, ' best score:', best_score)
 
         # the line below is to basically have a type-hinted var and notice in IDE if

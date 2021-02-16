@@ -1,6 +1,4 @@
 from midiutil import MIDIFile
-from midiutil.MidiFile import MIDITrack
-
 from adversarial_music_generator.models.timbre import Timbre
 from adversarial_music_generator.models.tune import Tune
 

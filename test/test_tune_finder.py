@@ -2,7 +2,6 @@ import unittest
 from typing import List
 import re
 
-from adversarial_music_generator.demo.naive_random.donothing_postprocessor import DoNothingPostprocessor
 from adversarial_music_generator.find_tunes_task import FindTunesTask
 from adversarial_music_generator.interfaces import TuneGeneratorInterface, TuneEvaluatorInterface, TuneMutatorInterface, \
     EvaluationReducerInterface, TuneProcessorInterface
@@ -76,10 +75,11 @@ class MockReducer(EvaluationReducerInterface):
 
 
 class MockPostprocessor(TuneProcessorInterface):
-    def process(self, tune: Tune, processor_seed: str):
+    def process(self, tune: Tune, base_seed: str, tune_seed: str):
         """
         into the first track we insert the note at time 0 with pitch "1313"
-        :param processor_seed:
+        :param tune_seed:
+        :param base_seed:
         :param tune:
         :return:
         """

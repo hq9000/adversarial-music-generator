@@ -1,4 +1,3 @@
-from abc import ABC
 from typing import List
 
 from adversarial_music_generator.interfaces import TuneGeneratorInterface

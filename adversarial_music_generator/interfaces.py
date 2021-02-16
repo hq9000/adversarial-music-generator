@@ -1,5 +1,5 @@
 from abc import ABC, abstractmethod
-from typing import List, Iterable
+from typing import List
 
 from adversarial_music_generator.models.tune import Tune
 from adversarial_music_generator.models.tune_evaluation_result import TuneEvaluationResult
@@ -39,5 +39,5 @@ class EvaluationReducerInterface(ABC):
 class TuneProcessorInterface(ABC):
 
     @abstractmethod
-    def process(self, tune: Tune, processor_seed: str):
+    def process(self, tune: Tune, base_seed: str, tune_seed: str):
         pass

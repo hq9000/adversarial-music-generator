@@ -10,7 +10,7 @@ from adversarial_music_generator.models.tune import Tune
 from adversarial_music_generator.models.tune_evaluation_result import TuneEvaluationResult
 
 pyximport.install()
-from adversarial_music_generator.evaluation_lib.harmony import calculate_disharmony
+from adversarial_music_generator.evaluation_lib.harmony import calculate_disharmony  # noqa: E402
 
 
 class NaiveRandomEvaluator(CalibratingTuneEvaluator):
