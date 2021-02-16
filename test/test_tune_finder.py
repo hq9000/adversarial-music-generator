@@ -76,9 +76,10 @@ class MockReducer(EvaluationReducerInterface):
 
 
 class MockPostprocessor(TuneProcessorInterface):
-    def process(self, tune: Tune):
+    def process(self, tune: Tune, processor_seed: str):
         """
         into the first track we insert the note at time 0 with pitch "1313"
+        :param processor_seed:
         :param tune:
         :return:
         """

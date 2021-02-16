@@ -47,10 +47,10 @@ class MutationSearchTask:
 
 def _generate_tune_by_blueprint(blueprint: TuneBlueprint, generator: TuneGeneratorInterface,
                                 mutator: TuneMutatorInterface, postprocessor: TuneProcessorInterface) -> Tune:
-    tune = generator.generate_tunes(blueprint.generator_seed, [blueprint.tune_seed])[0]
+    tune = generator.generate_tunes(blueprint.base_seed, [blueprint.tune_seed])[0]
     for mutation_seed in blueprint.mutation_seeds:
         mutator.mutate_tune(tune, mutation_seed)
-    postprocessor.process(tune)
+    postprocessor.process(tune, blueprint.base_seed)
     return tune
 
 
@@ -64,7 +64,7 @@ def _handle_generation_search_task(task: GenerationSearchTask) -> List[TuneEvalu
 
     tunes = generator.generate_tunes(task.base_seed_str, seeds)
     for tune in tunes:
-        task.postprocessor.process(tune)
+        task.postprocessor.process(tune, task.base_seed_str)
 
     evaluations = evaluator.evaluate_tunes(tunes)
 
@@ -72,7 +72,7 @@ def _handle_generation_search_task(task: GenerationSearchTask) -> List[TuneEvalu
         raise TuneFinderError('size mismatch (error: 93bf5bcc)')
 
     for seed, evaluation in zip(seeds, evaluations):
-        evaluation.blueprint = TuneBlueprint(generator_seed=task.base_seed_str, tune_seed=seed, mutation_seeds=[])
+        evaluation.blueprint = TuneBlueprint(base_seed=task.base_seed_str, tune_seed=seed, mutation_seeds=[])
 
     return evaluations
 
@@ -81,7 +81,8 @@ def _handle_mutation_search_task(task: MutationSearchTask) -> List[TuneEvaluatio
     evaluator = task.evaluator
     mutator = task.mutator
 
-    source_tunes = [_generate_tune_by_blueprint(x, task.generator, task.mutator, task.postprocessor) for x in task.initial_tunes_blueprints]
+    source_tunes = [_generate_tune_by_blueprint(x, task.generator, task.mutator, task.postprocessor) for x in
+                    task.initial_tunes_blueprints]
 
     mutated_tunes: List[Tune] = []
     mutated_tunes_blueprints: List[TuneBlueprint] = []
@@ -216,7 +217,8 @@ class TuneFinder(TuneFinderInterface):
 
             best_blueprints = [x.blueprint for x in best_tune_evaluations]
 
-        return [_generate_tune_by_blueprint(bp, find_task.generator, find_task.mutator, find_task.postprocessor) for bp in best_blueprints]
+        return [_generate_tune_by_blueprint(bp, find_task.generator, find_task.mutator, find_task.postprocessor) for bp
+                in best_blueprints]
 
     def _run_tasks(self, find_task: FindTunesTask, processing_function: callable, tasks: List,
                    progress_reporting_function: ProgressReportingFunction, phase_name: str) -> List:
@@ -240,7 +242,8 @@ class TuneFinder(TuneFinderInterface):
             for task in tasks:
                 result = processing_function(task)
                 results.append(result)
-                progress_reporting_function(phase_name, len(results), len(tasks), result, results, progress_reporting_memory)
+                progress_reporting_function(phase_name, len(results), len(tasks), result, results,
+                                            progress_reporting_memory)
 
         return self._merge_async_results(results)
 
@@ -255,7 +258,8 @@ class TuneFinder(TuneFinderInterface):
         return evaluations[0:how_many]
 
     def _generate_random_search_tasks(self, num_iterations: int, base_seed_str: str, generator: TuneGeneratorInterface,
-                                      evaluator: TuneEvaluatorInterface, postprocessor: TuneProcessorInterface, chunk_size: int) -> List[GenerationSearchTask]:
+                                      evaluator: TuneEvaluatorInterface, postprocessor: TuneProcessorInterface,
+                                      chunk_size: int) -> List[GenerationSearchTask]:
         cursor = 0
         tasks = []
         while cursor < num_iterations:
@@ -302,15 +306,3 @@ class TuneFinder(TuneFinderInterface):
     def _get_pool_size(self) -> int:
         # make it dependent on the number of available CPU cores
         return 4
-
-    def _generate_tune_by_mutation_chain(self, generator: TuneGeneratorInterface, mutator: TuneMutatorInterface,
-                                         generator_seed_str: str,
-                                         mutation_seed_str_chain: List[str]) -> Tune:
-        tunes = generator.generate_tunes([generator_seed_str])
-
-        tune = tunes[0]
-
-        for seed_str in mutation_seed_str_chain:
-            mutator.mutate_tune(tune, seed_str)
-
-        return tune
