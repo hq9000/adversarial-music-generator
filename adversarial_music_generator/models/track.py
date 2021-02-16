@@ -12,11 +12,9 @@ class Track:
         """
         a general purpose piece of info to allow generators put something
         for later
-        
+
         It's a dict where tag names are strings to allow tag checking.
-        
         if my_tag in track.tags:
             ...
-            
         """
         self.tags: Dict[str, Any] = {}

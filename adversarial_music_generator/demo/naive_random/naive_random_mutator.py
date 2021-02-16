@@ -1,6 +1,6 @@
 from typing import List
 
-from adversarial_music_generator.interfaces import TuneMutatorInterface, TuneGeneratorInterface
+from adversarial_music_generator.interfaces import TuneMutatorInterface
 from adversarial_music_generator.models.note import Note
 from adversarial_music_generator.models.tune import Tune
 from adversarial_music_generator.seed import Seed

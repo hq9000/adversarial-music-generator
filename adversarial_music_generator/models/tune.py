@@ -1,4 +1,4 @@
-from typing import List, Generator, Iterator
+from typing import List, Iterator
 
 from adversarial_music_generator.models.note import Note
 from adversarial_music_generator.models.track import Track

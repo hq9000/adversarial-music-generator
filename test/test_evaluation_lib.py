@@ -3,9 +3,9 @@ import pyximport
 from parameterized import parameterized
 
 pyximport.install()
-from adversarial_music_generator.evaluation_lib.harmony import calculate_disharmony
+from adversarial_music_generator.evaluation_lib.harmony import calculate_disharmony  # noqa E402
 
-from array import array
+from array import array  # noqa E402
 
 
 class TuneFinderTestCase(unittest.TestCase):
