@@ -79,8 +79,6 @@ def _handle_generation_search_task(task: GenerationSearchTask) -> List[TuneEvalu
 
 def _handle_mutation_search_task(task: MutationSearchTask) -> List[TuneEvaluationResult]:
     evaluator = task.evaluator
-    mutator = task.mutator
-
     source_tunes = [_generate_tune_by_blueprint(x, task.generator, task.mutator, task.postprocessor) for x in
                     task.initial_tunes_blueprints]
 
@@ -88,10 +86,7 @@ def _handle_mutation_search_task(task: MutationSearchTask) -> List[TuneEvaluatio
     mutated_tunes_blueprints: List[TuneBlueprint] = []
 
     for i in range(task.start_idx, task.end_idx):
-        source_tune = source_tunes[i % len(source_tunes)]
         source_tune_blueprint = task.initial_tunes_blueprints[i % len(source_tunes)]
-
-        tune_copy_for_mutation = deepcopy(source_tune)
         cloned_blueprint = deepcopy(source_tune_blueprint)
 
         if i >= len(task.initial_tunes_blueprints):
@@ -103,10 +98,11 @@ def _handle_mutation_search_task(task: MutationSearchTask) -> List[TuneEvaluatio
         else:
             mutation_seed = TuneMutatorInterface.SPECIAL_SEED_STR_TO_LEAVE_TUNE_UNMUTATED
 
-        mutator.mutate_tune(tune_copy_for_mutation, mutation_seed)
         cloned_blueprint.mutation_seeds.append(mutation_seed)
 
-        mutated_tunes.append(tune_copy_for_mutation)
+        mutated_tune = _generate_tune_by_blueprint(cloned_blueprint, task.generator, task.mutator, task.postprocessor)
+
+        mutated_tunes.append(mutated_tune)
         mutated_tunes_blueprints.append(cloned_blueprint)
 
     evaluations = evaluator.evaluate_tunes(mutated_tunes)
@@ -162,7 +158,8 @@ class TuneFinder(TuneFinderInterface):
                 memory[best_evaluation_memory_key] = locally_best_evaluations[0]
 
             best_score = memory[best_score_memory_key]
-            print(phase, iterations_done, "of", total_iterations, ' best score:', best_score)
+            print(phase, iterations_done, "of", total_iterations, "(yielded ", len(new_results), 'evaluations)',
+                  'best score:', best_score)
 
         # the line below is to basically have a type-hinted var and notice in IDE if
         # the function implementation violates the contract
