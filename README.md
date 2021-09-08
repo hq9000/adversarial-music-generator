@@ -42,9 +42,9 @@ The process works, roughly, as follows:
 4. Sort all of the tunes and keep only the predefined number of the "best" ones, discard all the others
 5. execute the following  iterative epoch-by-epoch process for the required number of epochs:
    1. apply random `Mutations` to the generation
-   2. Rank and sort all the tunes in this generation (using `Evaluation` and `Reduction`)
-   3. Keep the best Tunes only
-   4. Repeat 
+   2. rank and sort all the tunes in this generation (using `Evaluation` and `Reduction`)
+   3. keep the best Tunes only
+   4. repeat 
 6. in the end we are left with the last "mutation" generation and we can simply take the best tunes from that one.
 
 ### Description of the core procedures
