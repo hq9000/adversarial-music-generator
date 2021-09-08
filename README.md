@@ -39,15 +39,17 @@ The process works, roughly, as follows:
 1. `Generate` initial population of random tunes
 2. `Evaluate` them
 3. `Reduce` the evaluations
-4. Sort all of the tunes and keep only the predefined amount of the "best" ones, discard the others
-5. execute the following  iterative epoch-by-epoch process:
+4. Sort all of the tunes and keep only the predefined number of the "best" ones, discard all the others
+5. execute the following  iterative epoch-by-epoch process for the required number of epochs:
    1. apply random `Mutations` to the generation
-   2. Sort the generation (using `Evaluation` and `Reduction`)
+   2. Rank and sort all the tunes in this generation (using `Evaluation` and `Reduction`)
    3. Keep the best Tunes only
-6. in the end we are left we the last "mutation" generation and we can sample the best tunes from that one.   
+   4. Repeat 
+6. in the end we are left with the last "mutation" generation and we can simply take the best tunes from that one.
 
 ### Description of the core procedures
 
+Below goes the description of each of the core procedures used in the high-level search process.
 
 #### Generation
 
