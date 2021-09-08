@@ -1,4 +1,4 @@
-# Adversarial-Music-Generator
+# Adversarial Music Generator
 _...exploring the randomness in music_
 
 ## Overview
