@@ -1,5 +1,5 @@
 # Adversarial-Music-Generator
-_...exploring the randomness in_ music
+_...exploring the randomness in music_
 
 ## Overview
 
@@ -11,7 +11,8 @@ Additionally, a reference implementation of componenets is provided (called "Nai
 
 ### Examples
 
-These examples are generated using the reference implementation (see the code in `demo/naive_random`)
+[These examples](https://github.com/hq9000/adversarial-music-generator/tree/amg-8-tune-post-processor/adversarial_music_generator/demo/naive_random/mp3_examples) are generated using the reference implementation (see the code in `demo/naive_random`)
+
 
 
 ### Inspired by...
