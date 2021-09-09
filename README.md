@@ -16,7 +16,7 @@ Additionally, a reference implementation of componenets is provided (called "Nai
 
 
 ### Inspired by...
-The library largely borrows  inspiration from evolutionary approaches such as genetic algorithms and also some less evident inspiration from adversarial training of neural networks.
+The approach implemented in the library largely borrows  inspiration from evolutionary approaches such as genetic algorithms.
 
 
 ## How the search is performed
