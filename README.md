@@ -70,7 +70,7 @@ The reference "naive" implementation of evaluator can be seen in `NaiveRandomEva
 - "HARMONY"
   - punishing the tunes that have a lot of dissonant intervals
 - "CONTENT"
-  - punishing the tunes having too much or too few notes
+  - punishing the tunes having too many or too few notes
 
 #### Reduction
 
