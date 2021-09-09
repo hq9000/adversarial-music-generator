@@ -66,7 +66,7 @@ Again, the framework is generic, and only requires that evaluator classes implem
 The reference "naive" implementation of evaluator can be seen in `NaiveRandomEvaluator`. This implementation takes a tune and assigns it scores for such aspects as:
 
 - "RHYTHMICALITY"
-  - punishing the tunes that has a lot of out-of-beat notes
+  - punishing the tunes that have a lot of out-of-beat notes
 - "HARMONY"
   - punishing the tunes that have a lot of dissonant intervals
 - "CONTENT"
@@ -74,7 +74,7 @@ The reference "naive" implementation of evaluator can be seen in `NaiveRandomEva
 
 #### Reduction
 
-Reduction is a process of "reducing" the multi-dimensional evaluation to a single float number. 
+Reduction is a process of "reducing" the multi-dimensional evaluation into a single float number. 
 
 The reference `NaiveRandomReducer` does so by simply calculating a weighted sum of different components.
 
@@ -87,6 +87,8 @@ Examples:
 - remove a note
 - add a note
 - change the note's pitch 
+
+reference implementation: `adversarial_music_generator.demo.naive_random.naive_random_mutator.NaiveRandomMutator`
 
 ## How to compile cython parts
 
